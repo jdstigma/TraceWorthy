@@ -6,6 +6,10 @@ import android.provider.CallLog
 /**
  * Reads the device's system call log via the CallLog content provider.
  * Requires the READ_CALL_LOG permission (granted at runtime).
+ *
+ * Inbound-only: outgoing calls (ones the user placed) are excluded everywhere,
+ * since harassment is only ever an incoming call. This keeps totals, per-number
+ * counts, and the documents focused on calls the user received.
  */
 object CallLogRepository {
 
@@ -24,8 +28,8 @@ object CallLogRepository {
         context.contentResolver.query(
             CallLog.Calls.CONTENT_URI,
             projection,
-            null,
-            null,
+            "${CallLog.Calls.TYPE} != ?",                       // exclude outbound
+            arrayOf(CallLog.Calls.OUTGOING_TYPE.toString()),
             "${CallLog.Calls.DATE} DESC", // newest first
         )?.use { cursor ->
             val idxId = cursor.getColumnIndexOrThrow(CallLog.Calls._ID)
