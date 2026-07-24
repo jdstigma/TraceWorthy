@@ -24,6 +24,8 @@ Priority-ordered (reordered 2026-07-23). Completed ideas are in the Done section
 | 9 | **Active call monitoring / alerts** | From the original "call monitor" vision: today it's passive (manual refresh). Add a notification when a new flagged/suspicious call is detected. Needs a background receiver — scope carefully vs. Play Store call-log policy. | 💡 proposed (from initial prompt) |
 | 10 | **Dark-mode polish pass** | Review every screen in dark mode for contrast/spacing. | 💡 proposed |
 | 11 | **Call recording (speakerphone) + transcribe** | Step 2 of the *57 work: on speakerphone, play a "recording in progress" announcement, record the mic to an audio file (saved as evidence), best-effort live transcription into a note, with a state-consent warning. Adds RECORD_AUDIO. Note: Android blocks earpiece/telephony call audio for app-store apps — speakerphone acoustic capture is the only route, and full-call transcription is best-effort. | 💡 proposed (next step of *57) |
+| 12 | **Legal disclaimer — first-run agreement** | First-launch popup: "not legal advice; I'm not a lawyer; contact a local attorney." Accept / Decline (decline exits the app), shown once and remembered. Do before public/Play Store release. Bundle the non-affiliation notice (#13) into the same agreement. | 💡 proposed (do before release) |
+| 13 | **Non-affiliation statement** | State CallGuard is independent and unaffiliated with other "CallGuard"/"Call Guard" products (Eckoh secure payments, Xfinity/Comcast, Spectrum/Charter). Show in an About screen + include in the #12 agreement. Text drafted in DISCLAIMER.md. | 💡 drafted (see DISCLAIMER.md) |
 
 ---
 

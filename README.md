@@ -25,6 +25,10 @@ no accounts and no data leaving the device.
 > the device owner's own call log; it does not record others' calls, intercept
 > anything, or access any other device.
 
+> **Disclaimer & non-affiliation:** CallGuard is not legal advice and is an
+> independent project, unaffiliated with other "CallGuard"/"Call Guard" products
+> (Eckoh, Xfinity/Comcast, Spectrum/Charter). See [DISCLAIMER.md](DISCLAIMER.md).
+
 > **Note:** A companion PC pipeline (Python) still exists for turning carrier CSVs
 > into charts/PDFs, but the app is now the primary, self-contained tool — it
 > generates its documents on-device without needing the PC toolkit.
