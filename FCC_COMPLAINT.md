@@ -4,7 +4,7 @@ File at: **https://consumercomplaints.fcc.gov** → **Phone** → **Unwanted Cal
 → issue type **Caller ID Spoofing**.
 
 This is a blank template. Fill every placeholder in [BRACKETS] before submitting —
-including the call totals, which you take from your own CallGuard summary.
+including the call totals, which you take from your own TraceWorthy summary.
 
 ---
 
@@ -57,7 +57,7 @@ including the call totals, which you take from your own CallGuard summary.
 ---
 
 ## Attach / have ready
-- Your `CallGuard_summary.pdf` (from the analysis pipeline).
+- Your `TraceWorthy_summary.pdf` (from the analysis pipeline).
 - The CSV export, if they accept attachments or request it.
 - Your police report number and carrier case number once you have them.
 

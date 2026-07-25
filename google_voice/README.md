@@ -1,4 +1,4 @@
-# CallGuard — Google Voice (free) screening & logging
+# TraceWorthy — Google Voice (free) screening & logging
 
 A **100% free**, always-on screening number (runs in Google's cloud — no PC, no
 monthly fee). It logs every call, screens unknown callers, filters spam, and
@@ -45,7 +45,7 @@ python ..\analysis\analyze_calls.py --csv gvoice_calls.csv
 ```
 `gvoice_to_csv.py` writes `gvoice_calls.csv` (Timestamp, Number, Direction,
 DurationSeconds). `analyze_calls.py` then produces the usual four charts +
-`CallGuard_summary.pdf`.
+`TraceWorthy_summary.pdf`.
 
 ---
 

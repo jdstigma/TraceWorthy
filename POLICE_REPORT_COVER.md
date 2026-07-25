@@ -1,7 +1,7 @@
 # Police Report — Cover Note & Talking Points
 
 Bring this to the police (in person is best) along with a printout of
-`CallGuard_summary.pdf`. It states the facts plainly and cross-references your
+`TraceWorthy_summary.pdf`. It states the facts plainly and cross-references your
 FCC complaint and AT&T case so the file is self-contained. Fill every [BRACKET].
 
 ---
@@ -28,7 +28,7 @@ spoofing to harass and evade blocking.
 **Cross-references (so records link up):**
 - FCC complaint number: [FCC COMPLAINT #]
 - AT&T harassment/fraud case number: [AT&T CASE #]
-- Attached: CallGuard call-evidence summary (PDF) — full per-number breakdown,
+- Attached: TraceWorthy call-evidence summary (PDF) — full per-number breakdown,
   timestamps, and charts. Complete CSV log available on request.
 
 **Requests:**

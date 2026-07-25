@@ -1,27 +1,27 @@
 # Building distributables — APK (phone) & EXE (PC), and a CI path
 
 Two shippable artifacts:
-- **CallGuard.apk** — the Android app, installable on any phone.
-- **CallGuard.exe** — the desktop Control Panel, runs with no Python installed.
+- **TraceWorthy.apk** — the Android app, installable on any phone.
+- **TraceWorthy.exe** — the desktop Control Panel, runs with no Python installed.
 
 ---
 
-## 1. The desktop app → `CallGuard.exe`
+## 1. The desktop app → `TraceWorthy.exe`
 
 **Build it:** double-click **`build_exe.bat`** (or run it from a terminal). It
-installs PyInstaller + pandas + matplotlib and produces **`dist\CallGuard.exe`**.
+installs PyInstaller + pandas + matplotlib and produces **`dist\TraceWorthy.exe`**.
 
 Notes:
 - First build takes a few minutes and the exe is large (~250–350 MB — it bundles
   Python, pandas, and matplotlib). That's normal for a self-contained app.
-- **Keep `CallGuard.exe` inside the CallGuard project folder** so it can find the
+- **Keep `TraceWorthy.exe` inside the TraceWorthy project folder** so it can find the
   `analysis`, `google_voice`, and `twilio` subfolders. Charts land in
   `analysis\charts`.
 - The Twilio logger (button 3) still runs from the Python source, not the exe.
 
 ---
 
-## 2. The phone app → `CallGuard.apk`
+## 2. The phone app → `TraceWorthy.apk`
 
 You build this in **Android Studio**. The buildable Gradle project lives in
 **`android/`** in this repo — open that folder in Android Studio.
@@ -52,7 +52,7 @@ CI rebuilds both artifacts automatically. The workflow is committed at
 **`.github/workflows/build.yml`** — it runs on every push to `main` (and on-demand
 from the **Actions** tab):
 
-- **`exe` job** (Windows runner) → PyInstaller → uploads **CallGuard.exe**.
+- **`exe` job** (Windows runner) → PyInstaller → uploads **TraceWorthy.exe**.
 - **`apk` job** (Ubuntu runner) → `./gradlew assembleDebug` in `android/` →
   uploads **app-debug.apk**.
 

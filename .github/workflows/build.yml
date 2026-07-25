@@ -1,4 +1,4 @@
-name: Build CallGuard
+name: Build TraceWorthy
 
 on:
   push:
@@ -18,17 +18,17 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install pyinstaller pandas matplotlib
-      - name: Build CallGuard.exe
+      - name: Build TraceWorthy.exe
         run: >
-          pyinstaller --onefile --windowed --name CallGuard
+          pyinstaller --onefile --windowed --name TraceWorthy
           --paths analysis --paths google_voice
           --hidden-import analyze_calls --hidden-import gvoice_to_csv
           --collect-all pandas --collect-all matplotlib
-          callguard_launcher.py
+          traceworthy_launcher.py
       - uses: actions/upload-artifact@v7
         with:
-          name: CallGuard-exe
-          path: dist/CallGuard.exe
+          name: TraceWorthy-exe
+          path: dist/TraceWorthy.exe
 
   apk:
     name: Build Android debug APK
@@ -48,7 +48,7 @@ jobs:
         working-directory: android
       - uses: actions/upload-artifact@v7
         with:
-          name: CallGuard-apk
+          name: TraceWorthy-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
 
   release-exe:
@@ -63,19 +63,19 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install pyinstaller pandas matplotlib
-      - name: Build CallGuard.exe
+      - name: Build TraceWorthy.exe
         run: >
-          pyinstaller --onefile --windowed --name CallGuard
+          pyinstaller --onefile --windowed --name TraceWorthy
           --paths analysis --paths google_voice
           --hidden-import analyze_calls --hidden-import gvoice_to_csv
           --collect-all pandas --collect-all matplotlib
-          callguard_launcher.py
+          traceworthy_launcher.py
       - name: Attach exe to the release
         env:
           GH_TOKEN: ${{ github.token }}
         run: >
           gh release upload "${{ github.event.release.tag_name }}"
-          dist/CallGuard.exe
+          dist/TraceWorthy.exe
           --repo ${{ github.repository }} --clobber
 
   release-apk:

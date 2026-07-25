@@ -1,4 +1,4 @@
-# CallGuard Android app — build & install
+# TraceWorthy Android app — build & install
 
 The full Android project lives in **`android/`** in this repo. You just open it and
 run — no from-scratch project creation needed.
@@ -13,7 +13,7 @@ run — no from-scratch project creation needed.
 ## 2. Open the project
 
 **File → Open** → select the **`android`** folder inside this repo
-(`...\Projects\CallGuard\android`). Let Gradle sync finish (status bar goes quiet).
+(`...\Projects\TraceWorthy\android`). Let Gradle sync finish (status bar goes quiet).
 
 On first open, Android Studio auto-generates the machine-specific bits that are
 intentionally not in git (`local.properties`, `.idea/`, build caches). That's

@@ -3,7 +3,7 @@
 This is the part that actually **unmasks** the caller. An app on your phone can
 only record what the network shows it (which for a spoofed call is the *fake*
 number). Only your carrier and law enforcement can trace the real origin. Do
-these steps in parallel with using the CallGuard app to build your evidence log.
+these steps in parallel with using the TraceWorthy app to build your evidence log.
 
 ---
 
@@ -49,7 +49,7 @@ Harassment via phone is a crime in every US state. Police can **subpoena the
 carrier** for the traced-call records — that's how spoofed numbers get unmasked.
 
 Bring:
-- Your **CallGuard CSV export** (dates, times, ring durations, the silent
+- Your **TraceWorthy CSV export** (dates, times, ring durations, the silent
   pattern).
 - Any context on who you suspect and why.
 - The **\*57** trace dates (tell them you ran traces; the carrier has the data).
@@ -72,7 +72,7 @@ larger operation.
 ## 5. Practical protection while the case proceeds
 
 - Turn on **"Silence Unknown Callers"** (Android: Phone app → Settings → Caller
-  ID & spam / Blocked numbers). The CallGuard app still logs them for evidence.
+  ID & spam / Blocked numbers). The TraceWorthy app still logs them for evidence.
 - Do **not** engage or speak during silent calls — just log and hang up.
 - Keep your evidence log continuous; gaps weaken a case.
 
@@ -80,7 +80,7 @@ larger operation.
 
 ## Evidence log — what makes it hold up
 
-For each call, the CallGuard app records: **number shown, exact timestamp, ring
+For each call, the TraceWorthy app records: **number shown, exact timestamp, ring
 duration, answered/missed/rejected, and your note**. Consistency (same silent
 pattern, clustered times, unknown numbers) is what convinces a carrier and a
 judge to act. Export the CSV before every carrier call and police visit.

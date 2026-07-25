@@ -42,13 +42,13 @@ no accounts and no data leaving the device.
 | **Analysis pipeline** | `analysis/` | `analyze_calls.py` turns any call CSV (app export **or** carrier records, any carrier) into charts + a one-page PDF report. |
 | **Google Voice route** | `google_voice/` | Free screening number; `gvoice_to_csv.py` converts a Takeout export into the CSV the pipeline reads. |
 | **Twilio route** *(optional, ~$1/mo)* | `twilio/` | Logs each call's **STIR/SHAKEN attestation**. |
-| **Desktop control panel** | `callguard_launcher.py` | Tabbed GUI (Run + Help). Build to `.exe` with `build_exe.bat`. |
+| **Desktop control panel** | `traceworthy_launcher.py` | Tabbed GUI (Run + Help). Build to `.exe` with `build_exe.bat`. |
 
 ## Data flow
 
 ```
 Android app ─┐
-Carrier CSV ─┼─►  analyze_calls.py  ─►  charts + CallGuard_summary.pdf
+Carrier CSV ─┼─►  analyze_calls.py  ─►  charts + TraceWorthy_summary.pdf
 Google Voice ┘
 ```
 
@@ -66,7 +66,7 @@ source material and for use with the PC pipeline.
 covers first-time setup). Min SDK 29, package `com.traceworthy.app`.
 
 **Analysis (PC):** `pip install pandas matplotlib`, then double-click
-**`CallGuard Control Panel.bat`** — or `python analysis/analyze_calls.py --csv <file>`.
+**`TraceWorthy Control Panel.bat`** — or `python analysis/analyze_calls.py --csv <file>`.
 
 **Build artifacts:** `BUILD_DISTRIBUTABLES.md` covers the APK, the `.exe`, and CI;
 `SIGNING.md` covers signed release builds.

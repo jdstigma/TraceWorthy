@@ -17,39 +17,39 @@ up — you just create a keystore once and add it as GitHub Secrets. After that,
 `keytool` ships with the JDK / Android Studio. In a terminal:
 
 ```bash
-keytool -genkeypair -v -keystore callguard-release.jks -alias callguard \
+keytool -genkeypair -v -keystore traceworthy-release.jks -alias traceworthy \
   -keyalg RSA -keysize 2048 -validity 10000
 ```
 
 It prompts you to choose a **keystore password** and a **key password** (you can
 use the same for both) and asks for name/org details (any values are fine). This
-produces `callguard-release.jks`.
+produces `traceworthy-release.jks`.
 
 ### 2. Base64-encode it (so it can live in a secret)
 
 PowerShell:
 ```powershell
-[Convert]::ToBase64String([IO.File]::ReadAllBytes("callguard-release.jks")) > keystore.b64
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("traceworthy-release.jks")) > keystore.b64
 ```
 or Git Bash:
 ```bash
-base64 -w0 callguard-release.jks > keystore.b64
+base64 -w0 traceworthy-release.jks > keystore.b64
 ```
 
 ### 3. Add the four GitHub Secrets
 Using the GitHub CLI (already authenticated as you):
 
 ```bash
-gh secret set KEYSTORE_BASE64   --repo jdstigma/CallGuard < keystore.b64
-gh secret set KEYSTORE_PASSWORD --repo jdstigma/CallGuard --body "YOUR_KEYSTORE_PASSWORD"
-gh secret set KEY_ALIAS         --repo jdstigma/CallGuard --body "callguard"
-gh secret set KEY_PASSWORD      --repo jdstigma/CallGuard --body "YOUR_KEY_PASSWORD"
+gh secret set KEYSTORE_BASE64   --repo jdstigma/TraceWorthy < keystore.b64
+gh secret set KEYSTORE_PASSWORD --repo jdstigma/TraceWorthy --body "YOUR_KEYSTORE_PASSWORD"
+gh secret set KEY_ALIAS         --repo jdstigma/TraceWorthy --body "traceworthy"
+gh secret set KEY_PASSWORD      --repo jdstigma/TraceWorthy --body "YOUR_KEY_PASSWORD"
 ```
 
 (Or add them in the browser: repo → Settings → Secrets and variables → Actions.)
 
 ### 4. Clean up local copies
-Delete `keystore.b64` after uploading. Keep `callguard-release.jks` and the
+Delete `keystore.b64` after uploading. Keep `traceworthy-release.jks` and the
 passwords somewhere safe and backed up (a password manager is ideal).
 
 ---
@@ -58,11 +58,11 @@ passwords somewhere safe and backed up (a password manager is ideal).
 
 Once the secrets are set, every time you **publish a GitHub release** two CI jobs
 run: `release-apk` builds a signed `app-release.apk` with your keystore, and
-`release-exe` builds `CallGuard.exe` — both are attached to that release.
+`release-exe` builds `TraceWorthy.exe` — both are attached to that release.
 
 ```bash
 # bump versionName/versionCode in android/app/build.gradle.kts first, then:
-gh release create v1.0.3 --repo jdstigma/CallGuard --title "CallGuard v1.0.3" --notes "..."
+gh release create v1.0.3 --repo jdstigma/TraceWorthy --title "TraceWorthy v1.0.3" --notes "..."
 ```
 
 Watch it: `gh run watch` — when green, the signed APK and the exe are attached.

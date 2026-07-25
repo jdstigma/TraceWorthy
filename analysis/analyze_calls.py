@@ -2,7 +2,7 @@
 analyze_calls.py — turn a call log into report-grade charts + a one-page PDF.
 
 Accepts EITHER source and auto-detects which you gave it:
-  * a CallGuard app export  (CallGuard_evidence_*.csv), or
+  * a TraceWorthy app export  (TraceWorthy_evidence_*.csv), or
   * a carrier call-record export from ANY carrier (AT&T, Verizon, T-Mobile, ...).
 
 Carrier exports all use different column names, so this script auto-detects the
@@ -11,7 +11,7 @@ override any column by name (see --*-col options) and set --duration-unit.
 
 Outputs (in the --out folder, default ./charts):
   flagged_vs_normal.png, top_offenders.png, calls_per_day.png,
-  calls_by_hour.png, and CallGuard_summary.pdf
+  calls_by_hour.png, and TraceWorthy_summary.pdf
 
 Usage:
     python analyze_calls.py                         # auto-find newest CSV here/Downloads
@@ -45,13 +45,13 @@ SHORT_SECS = 15
 #  File discovery
 # --------------------------------------------------------------------------- #
 def find_default_csv() -> str | None:
-    """Newest CallGuard or carrier CSV next to this script, in cwd, or Downloads."""
-    patterns = ("CallGuard_evidence_*.csv", "*.csv")
+    """Newest TraceWorthy or carrier CSV next to this script, in cwd, or Downloads."""
+    patterns = ("TraceWorthy_evidence_*.csv", "*.csv")
     here = os.path.dirname(os.path.abspath(__file__))
     downloads = os.path.join(os.path.expanduser("~"), "Downloads")
     candidates = []
     for folder in (here, os.getcwd()):
-        candidates += glob.glob(os.path.join(folder, "CallGuard_evidence_*.csv"))
+        candidates += glob.glob(os.path.join(folder, "TraceWorthy_evidence_*.csv"))
     for folder in (here, os.getcwd(), downloads):
         for pat in patterns:
             candidates += glob.glob(os.path.join(folder, pat))
@@ -97,12 +97,12 @@ def _to_seconds(series: pd.Series, unit: str) -> pd.Series:
     return num.round().astype(int)  # seconds (or 'auto' → assume already seconds)
 
 
-def is_callguard_format(df: pd.DataFrame) -> bool:
+def is_traceworthy_format(df: pd.DataFrame) -> bool:
     cols = {_norm(c) for c in df.columns}
     return {"timestamp", "number", "suspicious"}.issubset(cols)
 
 
-def load_callguard(df: pd.DataFrame, days) -> pd.DataFrame:
+def load_traceworthy(df: pd.DataFrame, days) -> pd.DataFrame:
     df = df.assign(Timestamp=pd.to_datetime(df["Timestamp"], errors="coerce"))
     df = df.dropna(subset=["Timestamp"])
     df = df.assign(
@@ -182,9 +182,9 @@ def load_carrier(df: pd.DataFrame, days, overrides) -> pd.DataFrame:
 
 def load_any(csv_path, days, overrides):
     raw = pd.read_csv(csv_path)
-    if is_callguard_format(raw):
-        print("  Detected CallGuard app export.")
-        return load_callguard(raw, days)
+    if is_traceworthy_format(raw):
+        print("  Detected TraceWorthy app export.")
+        return load_traceworthy(raw, days)
     return load_carrier(raw, days, overrides)
 
 
@@ -288,7 +288,7 @@ def build_pdf(df, out, csv_name, days):
     top_count = int(df["Number"].value_counts().max()) if not df.empty else 0
     span = "All time" if not days else f"Last {days} days"
 
-    ax_head.text(0.0, 0.85, "CallGuard — Call Evidence Summary",
+    ax_head.text(0.0, 0.85, "TraceWorthy — Call Evidence Summary",
                  fontsize=20, fontweight="bold")
     lines = [
         f"Source: {csv_name}    ·    Range: {span}    ·    "
@@ -305,7 +305,7 @@ def build_pdf(df, out, csv_name, days):
     draw_top_offenders(fig.add_subplot(gs[2, :]), df)
     draw_calls_per_day(fig.add_subplot(gs[3, :]), df)
 
-    pdf_path = os.path.join(out, "CallGuard_summary.pdf")
+    pdf_path = os.path.join(out, "TraceWorthy_summary.pdf")
     fig.savefig(pdf_path)
     plt.close(fig)
     return pdf_path
@@ -336,8 +336,8 @@ def analyze(csv_path, days=None, out="charts", overrides=None):
 
 
 def main():
-    p = argparse.ArgumentParser(description="Chart a CallGuard or carrier call log.")
-    p.add_argument("--csv", help="Path to the CSV (CallGuard export or carrier records)")
+    p = argparse.ArgumentParser(description="Chart a TraceWorthy or carrier call log.")
+    p.add_argument("--csv", help="Path to the CSV (TraceWorthy export or carrier records)")
     p.add_argument("--days", type=int, help="Only include the last N days")
     p.add_argument("--out", default="charts", help="Output folder (default: charts)")
     # Carrier column overrides (only needed if auto-detect guesses wrong)

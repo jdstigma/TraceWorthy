@@ -1,5 +1,5 @@
 """
-callguard_launcher.py — a simple desktop control panel for the CallGuard tools.
+traceworthy_launcher.py — a simple desktop control panel for the TraceWorthy tools.
 
 Runs on your PC. Gives you a tabbed window with buttons instead of typing:
 
@@ -54,7 +54,7 @@ except Exception as _e:
 class Launcher(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("CallGuard Control Panel")
+        self.title("TraceWorthy Control Panel")
         self.geometry("760x580")
 
         nb = ttk.Notebook(self)
@@ -69,7 +69,7 @@ class Launcher(tk.Tk):
     # ------------------------------------------------------------------ Run --
     def _build_run_tab(self):
         pad = {"padx": 10, "pady": 6}
-        ttk.Label(self.run_tab, text="CallGuard tools — click a button, follow the prompt.",
+        ttk.Label(self.run_tab, text="TraceWorthy tools — click a button, follow the prompt.",
                   font=("Segoe UI", 11, "bold")).pack(anchor="w", **pad)
         ttk.Button(self.run_tab, text="1.  Convert Google Voice export  ➜  CSV",
                    command=self.convert_gvoice).pack(fill="x", **pad)
@@ -164,7 +164,7 @@ class Launcher(tk.Tk):
     # ----------------------------------------------------------------- Help --
     def _build_help_tab(self):
         help_text = (
-            "CallGuard Control Panel — how to use the buttons\n"
+            "TraceWorthy Control Panel — how to use the buttons\n"
             "================================================\n\n"
             "One-time setup:\n"
             "  • Chart libraries:  pip install pandas matplotlib\n"
@@ -175,9 +175,9 @@ class Launcher(tk.Tk):
             "  Unzip it, click this, and select the folder  Takeout\\Voice\\Calls.\n"
             "  Writes google_voice\\gvoice_calls.csv, ready for button 2.\n\n"
             "Button 2 — Make charts + PDF from a CSV\n"
-            "  Pick ANY call CSV: the Android app export (CallGuard_evidence_*.csv), a\n"
+            "  Pick ANY call CSV: the Android app export (TraceWorthy_evidence_*.csv), a\n"
             "  carrier download (AT&T/Verizon/T-Mobile), or gvoice_calls.csv from button 1.\n"
-            "  Auto-detects the format; writes four charts + CallGuard_summary.pdf into\n"
+            "  Auto-detects the format; writes four charts + TraceWorthy_summary.pdf into\n"
             "  analysis\\charts. That PDF is your one-page evidence sheet.\n\n"
             "Button 3 — Start Twilio logger (optional)\n"
             "  Only for the paid Twilio route (STIR/SHAKEN attestation). Not needed for\n"

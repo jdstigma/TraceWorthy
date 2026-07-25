@@ -64,6 +64,6 @@ The app knew which calls were silent. Carrier records don't, so the script flags
 immediate hang-ups. Adjust the idea with your own judgment when presenting it.
 
 ### Outputs
-Same as always: four PNG charts plus `CallGuard_summary.pdf` in the `charts`
+Same as always: four PNG charts plus `TraceWorthy_summary.pdf` in the `charts`
 folder — one page you can hand to your carrier or the police, built from
 authoritative, carrier-verified call data.

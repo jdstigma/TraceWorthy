@@ -98,7 +98,7 @@ def recording():
 
 @app.route("/health")
 def health():
-    return "CallGuard Twilio logger is running."
+    return "TraceWorthy Twilio logger is running."
 
 
 if __name__ == "__main__":
