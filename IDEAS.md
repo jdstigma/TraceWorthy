@@ -1,4 +1,4 @@
-# CallGuard — Ideas Backlog
+# TraceWorthy — Ideas Backlog
 
 A running list of feature/enhancement ideas to review one by one. Status legend:
 `💡 proposed` · `👍 approved` · `🔨 in progress` · `✅ done` · `❄️ parked` · `🗑️ dropped`
@@ -9,25 +9,25 @@ When we pick one up, move it to the relevant section and update status.
 
 ## Under review (bounce 1-by-1)
 
-Priority-ordered (reordered 2026-07-23). Completed ideas are in the Done section below.
+Priority-ordered by best procedure (reordered 2026-07-24). Rationale: protect first
+(disclaimer), then stand up the Settings container that later toggles slot into, then
+content/UX polish that makes the app feel finished, then the heavier features that need
+real-device testing, and attorney clearance as the final pre-Play gate. Completed ideas
+are in the Done section below.
 
 | # | Idea | Notes | Status |
 |---|------|-------|--------|
-| 1 | **Flagged Numbers detail + polish** | Tap a number → its own screen with stats + charts + full notes, and a simple back button to the list. Polish the list itself (declutter, clearly tappable cards). | ✅ done |
-| 2 | **Caller-name branches (group spoofed numbers)** | Select multiple numbers and file them under one custom "unknown branch" with a Caller Name tag, so spoofed numbers from the same source read as one identity. Auto-fill the name from contacts when the number is a saved contact. Grouped stats; documents reference the group. | ✅ done |
-| 3 | **Editable doc preview** | Preview/edit the filled-in document text before generating the PDF. | 💡 proposed |
-| 4 | **Flag-threshold setting** | The silent-call flag is hardcoded at ≤15s. A Settings control to adjust the threshold. | 💡 proposed |
-| 5 | **State-aware recording-consent flag** | Add a one-party vs all-party consent field to the per-state data so the *57/recording page warns based on the user's state (with a strong "verify" caveat). | 💡 proposed |
-| 6 | **Surface remaining .md content in Learn** | `analysis/HOW_TO_GET_CALL_RECORDS.md` (how to pull carrier call records / CDRs, the iPhone path) isn't in-app yet. Fold it into Learn. | 💡 proposed (from initial prompt) |
-| 7 | **Threat-keyword highlighting** | Auto-highlight words like "threat/kill/hurt/address" in the notes timeline to surface the most serious incidents. Speculative — needs care to avoid false signals. | 💡 proposed |
-| 8 | **Richer Learn / start-here flow** | A guided step-by-step "start here" path and an FAQ in the Learn section. | 💡 proposed |
-| 9 | **Active call monitoring / alerts** | From the original "call monitor" vision: today it's passive (manual refresh). Add a notification when a new flagged/suspicious call is detected. Needs a background receiver — scope carefully vs. Play Store call-log policy. | 💡 proposed (from initial prompt) |
-| 10 | **Dark-mode polish pass** | Review every screen in dark mode for contrast/spacing. | 💡 proposed |
-| 11 | **Call recording (speakerphone) + transcribe** | Step 2 of the *57 work: on speakerphone, play a "recording in progress" announcement, record the mic to an audio file (saved as evidence), best-effort live transcription into a note, with a state-consent warning. Adds RECORD_AUDIO. Note: Android blocks earpiece/telephony call audio for app-store apps — speakerphone acoustic capture is the only route, and full-call transcription is best-effort. | 💡 proposed (next step of *57) |
-| 12 | **Legal disclaimer — first-run agreement** | First-launch popup: "not legal advice; I'm not a lawyer; contact a local attorney." Accept / Decline (decline exits the app), shown once and remembered. Do before public/Play Store release. Bundle the non-affiliation notice (#13) into the same agreement. | 💡 proposed (do before release) |
-| 13 | **Non-affiliation statement** | The rename to TraceWorthy resolved the CallGuard trademark collision. Remaining non-affiliation is only vs. the unrelated "TraceWorthy Consulting" (Indonesia). Show in About + include in the #12 agreement. Text in DISCLAIMER.md. | ✅ drafted (see DISCLAIMER.md) |
-| 14 | **Finish the rename to TraceWorthy** | Done: Android package + display + repo; swept all .md docs; renamed PC toolkit (`traceworthy_launcher.py`, "TraceWorthy Control Panel.bat", build_exe.bat + CI now build TraceWorthy.exe; CI artifact names TraceWorthy-apk/-exe); analyze_calls.py output/input names; new app icon (teal locator target on navy, incl. monochrome). | ✅ done |
-| 15 | **Attorney trademark clearance (TraceWorthy)** | Formal clearance / manual USPTO search before public (Play Store) release. Final gate; do last. | 💡 proposed (end of backlog — pre-release) |
+| 1 | **Legal disclaimer — first-run agreement** | First-launch popup: "not legal advice; I'm not a lawyer; contact a local attorney." Accept / Decline (decline exits), shown once and remembered. Bundles the non-affiliation text (DISCLAIMER.md). Cheap + protective — do before wider distribution. | 💡 proposed |
+| 2 | **Settings screen + flag-threshold** | Introduce a Settings screen (the container future toggles live in) and make the silent-call flag threshold (hardcoded ≤15s) adjustable there. | 💡 proposed |
+| 3 | **Surface HOW_TO_GET_CALL_RECORDS in Learn** | Fold `analysis/HOW_TO_GET_CALL_RECORDS.md` (pull carrier CDRs, the iPhone path) into the Learn knowledge base. Quick content add. | 💡 proposed (from initial prompt) |
+| 4 | **Richer Learn / start-here flow** | A guided step-by-step "start here" path + FAQ in Learn. Builds on #3. | 💡 proposed |
+| 5 | **Editable doc preview** | Preview/edit the filled-in document text before generating the PDF. | 💡 proposed |
+| 6 | **Dark-mode polish pass** | Review every screen in dark mode; add a theme override toggle to the Settings screen (#2). | 💡 proposed |
+| 7 | **State-aware recording-consent flag** | One-party vs all-party consent field in the per-state data so the recording flow warns based on the user's state (strong "verify" caveat). Precursor to #8. | 💡 proposed |
+| 8 | **Call recording (speakerphone) + transcribe** | Speakerphone acoustic capture + "recording in progress" announcement → audio file (evidence) + best-effort transcription to a note. Adds RECORD_AUDIO; needs real-device testing. (Android blocks earpiece/telephony audio for app-store apps.) | 💡 proposed |
+| 9 | **Active call monitoring / alerts** | Notify when a new flagged call is detected (background receiver). Scope carefully vs. Play Store call-log policy. | 💡 proposed (from initial prompt) |
+| 10 | **Threat-keyword highlighting** | Auto-highlight words like "threat/kill/address" in the notes timeline. Speculative — guard against false signals. | 💡 proposed |
+| 11 | **Attorney trademark clearance (TraceWorthy)** | Formal clearance / manual USPTO search before a public Play Store release. Final gate; do last. | 💡 proposed (end — pre-release) |
 
 ---
 
@@ -62,6 +62,11 @@ _(moved here when we pick them up)_
 - Docs: flagged-numbers detail capped at top 15 by significance + long-tail summary line
 - Idea #2: Caller-name branches — multi-select Group flow, branch cards + merged
   detail (member numbers, Ungroup), documents print a branch as one identity
+- Inbound-only: outbound calls excluded from all totals/lists/docs
+- Rename CallGuard → TraceWorthy (app package/display, GitHub repo, PC toolkit, CI,
+  docs, moved off OneDrive to C:\Dev\TraceWorthy) + new app icon (coral receiver in a
+  white locator reticle w/ red center dot on navy)
+- Non-affiliation statement drafted (DISCLAIMER.md) — to be surfaced via backlog #1
 
 ---
 
