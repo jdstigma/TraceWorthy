@@ -142,6 +142,67 @@ object LearnContent {
             )
         ),
         Article(
+            title = "Get your carrier call records",
+            summary = "How to pull records from your carrier — and why iPhone users must.",
+            body = listOf(
+                Section(
+                    "iPhone can't use this app",
+                    listOf(
+                        "Apple does not allow third-party apps to access the iPhone call log. " +
+                            "That is an iOS restriction, not a limit of this app — no app, including " +
+                            "TraceWorthy, can read an iPhone's calls. TraceWorthy is Android-only for " +
+                            "this reason (Android does allow it, with your permission).",
+                        "If you have an iPhone, you build your record a different way: pull your call " +
+                            "history from your carrier (below).",
+                    )
+                ),
+                Section(
+                    "Carrier records help everyone",
+                    listOf(
+                        "Even on Android, carrier records are stronger evidence than an on-phone log: " +
+                            "they are complete, carrier-verified, and harder to dispute. They are worth " +
+                            "getting to supplement what the app captures.",
+                    )
+                ),
+                Section(
+                    "AT&T",
+                    listOf(
+                        "Sign in at att.com (or the myAT&T app) → Bill & usage → Usage. Choose the " +
+                            "line, pick Call details, and Download / Export to CSV.",
+                    )
+                ),
+                Section(
+                    "Verizon",
+                    listOf(
+                        "Sign in at verizon.com → My Verizon → Bill → View bill. Open Call & message " +
+                            "logs (or Voice usage details) for the line and download the CSV.",
+                    )
+                ),
+                Section(
+                    "T-Mobile",
+                    listOf(
+                        "Sign in at t-mobile.com → Account → Line usage. Select the line → Calls → " +
+                            "Download / Export.",
+                    )
+                ),
+                Section(
+                    "Any other carrier",
+                    listOf(
+                        "Log in to your account portal and look for usage / call detail records (CDR), " +
+                            "then download the CSV. Prepaid and MVNO accounts usually have this too.",
+                    )
+                ),
+                Section(
+                    "Certified records for a case",
+                    listOf(
+                        "For a police or legal matter, ask your carrier's fraud / harassment department " +
+                            "for certified call records. Those are the authoritative records law " +
+                            "enforcement relies on.",
+                    )
+                ),
+            )
+        ),
+        Article(
             title = "Glossary",
             summary = "Spoofing, traceback, subpoena, and the terms officials will use.",
             body = listOf(
