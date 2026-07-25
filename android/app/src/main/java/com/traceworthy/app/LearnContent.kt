@@ -18,6 +18,45 @@ object LearnContent {
 
     val articles: List<Article> = listOf(
         Article(
+            title = "Start here — the whole process",
+            summary = "The step-by-step path from a harassing call to a filed complaint.",
+            body = listOf(
+                Section(
+                    "Set up (once)",
+                    listOf(
+                        "1. Grant call-log access so TraceWorthy can read your calls. (Android only — " +
+                            "iPhone can't; see \"Get your carrier call records.\")",
+                        "2. Open My info and enter your name, phone, carrier, and state. Every document " +
+                            "auto-fills from this, so you only type it once.",
+                        "3. In Settings, adjust the flag threshold if you want (default flags calls " +
+                            "15 seconds or shorter from unknown numbers).",
+                    )
+                ),
+                Section(
+                    "As calls come in",
+                    listOf(
+                        "4. In Call log, tap a harassing call to add a note and tag how serious it was " +
+                            "(Silent / Spoken / Threatening).",
+                        "5. In Flagged numbers, group the spoofed numbers that are really one caller " +
+                            "under a single name.",
+                        "6. Right after a harassing call, open Call trace and dial *57 — it logs the " +
+                            "trace time for police.",
+                    )
+                ),
+                Section(
+                    "Build and file",
+                    listOf(
+                        "7. In Documents, generate the Evidence packet (or individual documents) as a PDF.",
+                        "8. File your FCC complaint (federal), a police report (this is what lets police " +
+                            "subpoena your carrier), and a carrier harassment case. State help lists your " +
+                            "state's contacts.",
+                        "9. As you get case numbers, save them back into My info so they cross-reference " +
+                            "in every document you generate afterward.",
+                    )
+                ),
+            )
+        ),
+        Article(
             title = "What TraceWorthy can and can't do",
             summary = "Why an app can't unmask a spoofed caller — and what it does instead.",
             body = listOf(
@@ -137,6 +176,50 @@ object LearnContent {
                         "Export regularly so you have dated snapshots. Don't delete the harassing " +
                             "calls from your phone log — they are the evidence. Add notes while the " +
                             "details are fresh.",
+                    )
+                ),
+            )
+        ),
+        Article(
+            title = "FAQ",
+            summary = "Quick answers to the most common questions.",
+            body = listOf(
+                Section(
+                    "Why can't the app tell me who's really calling?",
+                    listOf(
+                        "A spoofed caller ID is a fake number, so your phone (and any app) only ever " +
+                            "sees the fake. Only your carrier and law enforcement can unmask the real " +
+                            "origin through a traceback/subpoena. TraceWorthy builds the evidence that " +
+                            "gets them to act.",
+                    )
+                ),
+                Section(
+                    "Is my data private?",
+                    listOf(
+                        "Yes. Everything stays on your device — no accounts, and nothing is uploaded. " +
+                            "Documents you generate go to your Downloads and are only shared if you choose to.",
+                    )
+                ),
+                Section(
+                    "Does *57 work on a cell phone?",
+                    listOf(
+                        "*57 is most reliable on landlines; some wireless carriers don't support it. On " +
+                            "mobile, the route that actually unmasks a spoofed caller is the police-report-" +
+                            "to-carrier-subpoena chain.",
+                    )
+                ),
+                Section(
+                    "Can I record the harassing call?",
+                    listOf(
+                        "Android blocks apps from recording call audio, and recording laws vary by state " +
+                            "(some require every party's consent). Rely on the call log, your notes, and *57.",
+                    )
+                ),
+                Section(
+                    "Why USA only?",
+                    listOf(
+                        "The traceback process TraceWorthy is built around is US-federal (FCC / TRACED " +
+                            "Act) and works the same in every state. Laws differ greatly outside the US.",
                     )
                 ),
             )
