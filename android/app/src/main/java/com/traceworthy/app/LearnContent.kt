@@ -162,5 +162,13 @@ object LearnContent {
                 ),
             )
         ),
+        Article(
+            title = "Disclaimer & about",
+            summary = "Not legal advice; an independent app.",
+            body = listOf(
+                Section("Not legal advice", LegalText.notLegalAdvice),
+                Section("Independent app", LegalText.nonAffiliation),
+            )
+        ),
     )
 }

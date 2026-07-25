@@ -63,7 +63,20 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            TraceWorthyTheme { TraceWorthyApp() }
+            TraceWorthyTheme {
+                var accepted by remember { mutableStateOf(AgreementStore.isAccepted(this@MainActivity)) }
+                if (accepted) {
+                    TraceWorthyApp()
+                } else {
+                    AgreementScreen(
+                        onAccept = {
+                            AgreementStore.setAccepted(this@MainActivity)
+                            accepted = true
+                        },
+                        onDecline = { finish() },
+                    )
+                }
+            }
         }
     }
 }
