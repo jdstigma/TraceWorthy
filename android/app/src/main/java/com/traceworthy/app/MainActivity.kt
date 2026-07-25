@@ -159,6 +159,13 @@ fun TraceWorthyApp() {
                         profile = it
                         ProfileStore.save(context, it)
                     })
+                    Screen.Settings -> SettingsScreen(
+                        current = SettingsStore.flagThresholdSeconds(context),
+                        onSave = { seconds ->
+                            SettingsStore.setFlagThresholdSeconds(context, seconds)
+                            if (granted) entries = CallLogRepository.readAll(context)
+                        },
+                    )
                 }
             }
         }

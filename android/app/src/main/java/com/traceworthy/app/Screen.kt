@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.TrackChanges
 import androidx.compose.ui.graphics.vector.ImageVector
 
@@ -27,7 +28,8 @@ enum class Screen(
     Documents("Documents", Icons.Filled.Description),
     Learn("Learn", Icons.AutoMirrored.Filled.MenuBook),
     StateHelp("State help", Icons.Filled.AccountBalance),
-    MyInfo("My info", Icons.Filled.Person);
+    MyInfo("My info", Icons.Filled.Person),
+    Settings("Settings", Icons.Filled.Settings);
 
     companion object {
         val menuOrder: List<Screen> = entries.toList()

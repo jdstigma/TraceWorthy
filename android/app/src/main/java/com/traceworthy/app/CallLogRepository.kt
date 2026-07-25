@@ -24,6 +24,7 @@ object CallLogRepository {
         )
 
         val entries = mutableListOf<CallEntry>()
+        val flagThreshold = SettingsStore.flagThresholdSeconds(context).toLong()
 
         context.contentResolver.query(
             CallLog.Calls.CONTENT_URI,
@@ -51,6 +52,7 @@ object CallLogRepository {
                     type = cursor.getInt(idxType),
                     note = NotesStore.get(context, id),
                     severity = NotesStore.getSeverity(context, id),
+                    flagThresholdSeconds = flagThreshold,
                 )
             }
         }

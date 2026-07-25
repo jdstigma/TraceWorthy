@@ -33,7 +33,8 @@ data class CallEntry(
     val durationSeconds: Long, // connected duration in seconds (0 for missed/rejected)
     val type: Int,             // CallLog.Calls.TYPE (INCOMING, MISSED, REJECTED, ...)
     val note: String? = null,  // your annotation (added later via the DB layer)
-    val severity: Severity = Severity.Unset // how serious this call was, if tagged
+    val severity: Severity = Severity.Unset, // how serious this call was, if tagged
+    val flagThresholdSeconds: Long = 15L     // ≤ this duration counts as silent/short (user-set)
 ) {
     val isKnownContact: Boolean get() = !cachedName.isNullOrBlank()
 
@@ -47,7 +48,7 @@ data class CallEntry(
             val incomingLike = type == android.provider.CallLog.Calls.INCOMING_TYPE ||
                 type == android.provider.CallLog.Calls.MISSED_TYPE ||
                 type == android.provider.CallLog.Calls.REJECTED_TYPE
-            val silent = durationSeconds <= 15L // missed, or answered-but-silent
+            val silent = durationSeconds <= flagThresholdSeconds // missed, or answered-but-silent
             return incomingLike && !isKnownContact && silent
         }
 

@@ -18,7 +18,7 @@ are in the Done section below.
 | # | Idea | Notes | Status |
 |---|------|-------|--------|
 | 1 | **Legal disclaimer — first-run agreement** | First-launch popup: "not legal advice; I'm not a lawyer; contact a local attorney." Accept / Decline (decline exits), shown once and remembered. Bundles the non-affiliation text (DISCLAIMER.md). Cheap + protective — do before wider distribution. | ✅ done |
-| 2 | **Settings screen + flag-threshold** | Introduce a Settings screen (the container future toggles live in) and make the silent-call flag threshold (hardcoded ≤15s) adjustable there. | 💡 proposed |
+| 2 | **Settings screen + flag-threshold** | Introduce a Settings screen (the container future toggles live in) and make the silent-call flag threshold (hardcoded ≤15s) adjustable there. | ✅ done |
 | 3 | **Surface HOW_TO_GET_CALL_RECORDS in Learn** | Fold `analysis/HOW_TO_GET_CALL_RECORDS.md` (pull carrier CDRs, the iPhone path) into the Learn knowledge base. Quick content add. | 💡 proposed (from initial prompt) |
 | 4 | **Richer Learn / start-here flow** | A guided step-by-step "start here" path + FAQ in Learn. Builds on #3. | 💡 proposed |
 | 5 | **Editable doc preview** | Preview/edit the filled-in document text before generating the PDF. | 💡 proposed |
