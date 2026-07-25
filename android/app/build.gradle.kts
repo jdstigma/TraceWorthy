@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.callguard.app"
+    namespace = "com.traceworthy.app"
     compileSdk {
         version = release(36) {
             minorApiLevel = 1
@@ -12,7 +12,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.callguard.app"
+        applicationId = "com.traceworthy.app"
         minSdk = 29
         targetSdk = 36
         versionCode = 6

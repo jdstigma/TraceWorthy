@@ -1,7 +1,7 @@
-# CallGuard
+# TraceWorthy
 
 An all-in-one **Android app** for people dealing with **unwanted or spoofed phone
-calls** — the repeated, silent, always-a-different-number kind. CallGuard both
+calls** — the repeated, silent, always-a-different-number kind. TraceWorthy both
 **monitors** your calls (flagging the harassment pattern) and turns them into the
 **evidence and documents** you need to get a carrier traceback started: FCC
 complaints, police report cover notes, carrier call scripts, and evidence
@@ -14,20 +14,19 @@ tracebacks work), **State help** (federal + your state's reporting contacts), an
 **My info** (enter your details once; every document auto-fills). It's free, with
 no accounts and no data leaving the device.
 
-> **Audience:** USA only. The traceback mechanism CallGuard is built around is
+> **Audience:** USA only. The traceback mechanism TraceWorthy is built around is
 > federal (FCC / TRACED Act), so it works the same in every state — only your
 > local police and state Attorney General contacts differ, and the app lists
 > those for you. Laws differ greatly outside the US, which is out of scope.
 
-> **Scope & limits:** CallGuard *documents* calls; it cannot reveal who is really
+> **Scope & limits:** TraceWorthy *documents* calls; it cannot reveal who is really
 > calling when the number is spoofed. Spoofed caller ID is only unmaskable by
-> carriers and law enforcement (via traceback / subpoena). CallGuard reads only
+> carriers and law enforcement (via traceback / subpoena). TraceWorthy reads only
 > the device owner's own call log; it does not record others' calls, intercept
 > anything, or access any other device.
 
-> **Disclaimer & non-affiliation:** CallGuard is not legal advice and is an
-> independent project, unaffiliated with other "CallGuard"/"Call Guard" products
-> (Eckoh, Xfinity/Comcast, Spectrum/Charter). See [DISCLAIMER.md](DISCLAIMER.md).
+> **Disclaimer:** TraceWorthy is not legal advice and is an independent project
+> (unaffiliated with the similarly named "TraceWorthy Consulting"). See [DISCLAIMER.md](DISCLAIMER.md).
 
 > **Note:** A companion PC pipeline (Python) still exists for turning carrier CSVs
 > into charts/PDFs, but the app is now the primary, self-contained tool — it
@@ -64,7 +63,7 @@ source material and for use with the PC pipeline.
 ## Quick start
 
 **Android app:** open `android/` in Android Studio and Run ▶ (`SETUP_ANDROID_STUDIO.md`
-covers first-time setup). Min SDK 29, package `com.callguard.app`.
+covers first-time setup). Min SDK 29, package `com.traceworthy.app`.
 
 **Analysis (PC):** `pip install pandas matplotlib`, then double-click
 **`CallGuard Control Panel.bat`** — or `python analysis/analyze_calls.py --csv <file>`.
