@@ -17,12 +17,11 @@ are in the Done section below.
 
 | # | Idea | Notes | Status |
 |---|------|-------|--------|
-| 1 | **Dark-mode polish pass** | Review every screen in dark mode; add a theme override toggle to the Settings screen. | 💡 proposed (top) |
-| 2 | **State-aware recording-consent flag** | One-party vs all-party consent field in the per-state data so the recording flow warns based on the user's state (strong "verify" caveat). Precursor to #3. | 💡 proposed |
-| 3 | **Call recording (speakerphone) + transcribe** | Speakerphone acoustic capture + "recording in progress" announcement → audio file (evidence) + best-effort transcription to a note. Adds RECORD_AUDIO; needs real-device testing. (Android blocks earpiece/telephony audio for app-store apps.) | 💡 proposed |
-| 4 | **Active call monitoring / alerts** | Notify when a new flagged call is detected (background receiver). Scope carefully vs. Play Store call-log policy. | 💡 proposed (from initial prompt) |
-| 5 | **Threat-keyword highlighting** | Auto-highlight words like "threat/kill/address" in the notes timeline. Speculative — guard against false signals. | 💡 proposed |
-| 6 | **Attorney trademark clearance** | Formal clearance / manual USPTO search for **TraceWorthy** before a public Play Store release. Final gate; do last. | 💡 proposed (end — pre-release) |
+| 1 | **State-aware recording-consent flag** | One-party vs all-party consent field in the per-state data so the recording flow warns based on the user's state (strong "verify" caveat). Precursor to #2. | 💡 proposed (top) |
+| 2 | **Call recording (speakerphone) + transcribe** | Speakerphone acoustic capture + "recording in progress" announcement → audio file (evidence) + best-effort transcription to a note. Adds RECORD_AUDIO; needs real-device testing. (Android blocks earpiece/telephony audio for app-store apps.) | 💡 proposed |
+| 3 | **Active call monitoring / alerts** | Notify when a new flagged call is detected (background receiver). Scope carefully vs. Play Store call-log policy. | 💡 proposed (from initial prompt) |
+| 4 | **Threat-keyword highlighting** | Auto-highlight words like "threat/kill/address" in the notes timeline. Speculative — guard against false signals. | 💡 proposed |
+| 5 | **Attorney trademark clearance** | Formal clearance / manual USPTO search for **TraceWorthy** before a public Play Store release. Final gate; do last. | 💡 proposed (end — pre-release) |
 
 ---
 
@@ -74,6 +73,10 @@ _(moved here when we pick them up)_
   `buildEditable()` returns an `EditableDocument` (text blocks editable, tables/charts shown
   as read-only chips); `updateText()` applies edits by block index; `render()`/`writePdf()`
   save to Downloads. Then it shares as before. _(in progress — pending on-device eyeball + release)_
+- Dark mode: persisted Appearance toggle (System/Light/Dark) in Settings — `ThemeMode` in
+  SettingsStore, state hoisted above `TraceWorthyTheme` in MainActivity so it applies live.
+  Polish: theme-aware bar-chart track (was hardcoded `0xFFEEEEEE`), preview dialog top bar
+  uses `onPrimary`. _(in progress — pending on-device eyeball + release)_
 
 ---
 

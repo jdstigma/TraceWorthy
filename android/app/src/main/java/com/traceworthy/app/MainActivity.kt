@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -65,10 +66,22 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            TraceWorthyTheme {
+            var themeMode by remember { mutableStateOf(SettingsStore.themeMode(this@MainActivity)) }
+            val dark = when (themeMode) {
+                ThemeMode.System -> isSystemInDarkTheme()
+                ThemeMode.Light -> false
+                ThemeMode.Dark -> true
+            }
+            TraceWorthyTheme(darkTheme = dark) {
                 var accepted by remember { mutableStateOf(AgreementStore.isAccepted(this@MainActivity)) }
                 if (accepted) {
-                    TraceWorthyApp()
+                    TraceWorthyApp(
+                        themeMode = themeMode,
+                        onThemeModeChange = {
+                            themeMode = it
+                            SettingsStore.setThemeMode(this@MainActivity, it)
+                        },
+                    )
                 } else {
                     AgreementScreen(
                         onAccept = {
@@ -85,7 +98,10 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TraceWorthyApp() {
+fun TraceWorthyApp(
+    themeMode: ThemeMode,
+    onThemeModeChange: (ThemeMode) -> Unit,
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
@@ -167,6 +183,8 @@ fun TraceWorthyApp() {
                             SettingsStore.setFlagThresholdSeconds(context, seconds)
                             if (granted) entries = CallLogRepository.readAll(context)
                         },
+                        themeMode = themeMode,
+                        onThemeModeChange = onThemeModeChange,
                     )
                 }
             }

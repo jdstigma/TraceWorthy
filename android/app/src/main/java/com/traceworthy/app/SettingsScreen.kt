@@ -11,7 +11,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
@@ -29,7 +32,12 @@ import com.traceworthy.app.ui.CGCard
 import com.traceworthy.app.ui.SectionHeader
 
 @Composable
-fun SettingsScreen(current: Int, onSave: (Int) -> Unit) {
+fun SettingsScreen(
+    current: Int,
+    onSave: (Int) -> Unit,
+    themeMode: ThemeMode,
+    onThemeModeChange: (ThemeMode) -> Unit,
+) {
     val context = LocalContext.current
     var value by remember { mutableFloatStateOf(current.toFloat()) }
     val seconds = value.toInt()
@@ -43,6 +51,32 @@ fun SettingsScreen(current: Int, onSave: (Int) -> Unit) {
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onBackground,
         )
+        Spacer(Modifier.height(16.dp))
+
+        CGCard {
+            SectionHeader("Appearance")
+            Spacer(Modifier.height(6.dp))
+            Text(
+                "Choose light or dark, or follow your phone's system setting.",
+                fontSize = 13.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(12.dp))
+            Row(Modifier.fillMaxWidth()) {
+                ThemeMode.entries.forEach { mode ->
+                    FilterChip(
+                        selected = mode == themeMode,
+                        onClick = { onThemeModeChange(mode) },
+                        label = { Text(mode.label) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.secondary,
+                            selectedLabelColor = MaterialTheme.colorScheme.onSecondary,
+                        ),
+                    )
+                    Spacer(Modifier.width(8.dp))
+                }
+            }
+        }
         Spacer(Modifier.height(16.dp))
 
         CGCard {
