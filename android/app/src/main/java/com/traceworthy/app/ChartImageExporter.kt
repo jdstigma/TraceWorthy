@@ -12,6 +12,7 @@ import android.net.Uri
 import android.os.Environment
 import android.provider.MediaStore
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
@@ -24,9 +25,10 @@ object ChartImageExporter {
 
     private val stamp = SimpleDateFormat("yyyy-MM-dd_HHmmss", Locale.US)
     private val human = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
+    private val dateFmt = SimpleDateFormat("MMM d", Locale.US)
 
-    fun export(context: Context, stats: CallStats, rangeLabel: String): Uri? {
-        val bitmap = render(stats, rangeLabel)
+    fun export(context: Context, stats: CallStats, entries: List<CallEntry>, rangeLabel: String): Uri? {
+        val bitmap = render(stats, entries, rangeLabel)
         val fileName = "TraceWorthy_charts_${stamp.format(Date())}.png"
         val values = ContentValues().apply {
             put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
@@ -51,10 +53,10 @@ object ChartImageExporter {
         context.startActivity(Intent.createChooser(intent, "Share TraceWorthy charts"))
     }
 
-    private fun render(stats: CallStats, rangeLabel: String): Bitmap {
+    private fun render(stats: CallStats, entries: List<CallEntry>, rangeLabel: String): Bitmap {
         val w = 1000
         val topNumbers = stats.perNumber.take(5)
-        val h = 720 + topNumbers.size * 80
+        val h = 720 + topNumbers.size * 80 + 480
         val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
         val c = Canvas(bmp)
         c.drawColor(AColor.WHITE)
@@ -115,6 +117,40 @@ object ChartImageExporter {
             val bw = barMaxW * n.totalCount / maxCount
             c.drawRect(barLeft, y, barLeft + bw, y + 26f, if (n.flaggedCount > 0) red else blue)
             y += 26f
+        }
+
+        // --- Scatter: calls over time (date x time of day) ---
+        y += 70f
+        c.drawText("Calls over time (date x time of day)", 40f, y, h2)
+        y += 30f
+        val plotLeft = 110f
+        val plotRight = w - 40f
+        val plotTop = y
+        val plotH = 320f
+        val plotBottom = plotTop + plotH
+        val grid = Paint().apply { color = AColor.LTGRAY; strokeWidth = 2f; isAntiAlias = true }
+        val yLabels = listOf("12a", "6p", "12p", "6a", "12a")
+        for (i in 0..4) {
+            val yy = plotTop + plotH * (i / 4f)
+            c.drawLine(plotLeft, yy, plotRight, yy, grid)
+            c.drawText(yLabels[i], 40f, yy + 9f, body)
+        }
+        if (entries.isNotEmpty()) {
+            val minT = entries.minOf { it.timestampMillis }
+            val maxT = entries.maxOf { it.timestampMillis }
+            val spanT = (maxT - minT).coerceAtLeast(1L).toFloat()
+            entries.forEach { e ->
+                val xf = (e.timestampMillis - minT) / spanT
+                val cal = Calendar.getInstance().apply { timeInMillis = e.timestampMillis }
+                val hourFrac = (cal.get(Calendar.HOUR_OF_DAY) + cal.get(Calendar.MINUTE) / 60f) / 24f
+                val px = plotLeft + (plotRight - plotLeft) * xf
+                val py = plotBottom - plotH * hourFrac
+                c.drawCircle(px, py, 7f, if (e.isSuspicious) red else blue)
+            }
+            y = plotBottom + 38f
+            c.drawText(dateFmt.format(Date(minT)), plotLeft, y, body)
+            val endLabel = dateFmt.format(Date(maxT))
+            c.drawText(endLabel, plotRight - body.measureText(endLabel), y, body)
         }
 
         return bmp

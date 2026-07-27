@@ -102,7 +102,7 @@ fun AnalysisScreen(entries: List<CallEntry>, onNotesChanged: () -> Unit) {
             Spacer(Modifier.height(12.dp))
             Button(
                 onClick = {
-                    val uri = ChartImageExporter.export(context, stats, rangeLabel)
+                    val uri = ChartImageExporter.export(context, stats, filtered, rangeLabel)
                     if (uri != null) {
                         ChartImageExporter.share(context, uri)
                         Toast.makeText(context, "Saved to Pictures — opening share…", Toast.LENGTH_LONG).show()
@@ -131,6 +131,27 @@ fun AnalysisScreen(entries: List<CallEntry>, onNotesChanged: () -> Unit) {
             SubHeader("Top numbers by call count")
             Spacer(Modifier.height(8.dp))
             if (topBars.isEmpty()) Text("No calls yet.") else BarChart(topBars)
+            Spacer(Modifier.height(24.dp))
+
+            SubHeader("Calls over time")
+            Spacer(Modifier.height(8.dp))
+            val scatterPoints = remember(filtered) {
+                filtered.map { ScatterPoint(it.timestampMillis, it.isSuspicious) }
+            }
+            ScatterChart(
+                points = scatterPoints,
+                flaggedColor = flaggedColor,
+                normalColor = Color(0xFF185FA5),
+                axisColor = MaterialTheme.colorScheme.outline,
+                labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(Modifier.height(6.dp))
+            Text(
+                "Each dot is a call — horizontal = date, vertical = time of day. Red = flagged.",
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             Spacer(Modifier.height(24.dp))
 
             SubHeader("Summary")
