@@ -67,58 +67,113 @@ internal sealed interface Block {
 internal data class ChartBar(val label: String, val value: Int, val highlight: Boolean)
 
 /** What kind of preview row this is — drives how the editor renders it. */
-enum class PreviewKind { Title, Heading, Body, Bullet, Structural }
+enum class PreviewKind { Body, Bullet, Structural }
 
 /**
- * One row shown in the document preview/editor. [editable] text rows carry the current
- * [text]; structural rows (tables, charts, page breaks) are read-only and described by [label].
+ * One editable/read-only row inside a preview section. [id] is stable across add/remove
+ * so the UI can key fields and target edits even as rows shift.
  */
-data class PreviewItem(
-    val index: Int,
+data class EditRow(
+    val id: Long,
     val kind: PreviewKind,
     val editable: Boolean,
+    val removable: Boolean,
     val text: String,
     val label: String,
 )
 
 /**
- * A built document whose text the user can preview and edit before it is rendered to PDF.
- * Holds the block list; edits are applied by block index, then [render] writes the PDF.
+ * A collapsible group in the preview, keyed to one of the document's own headings (or its
+ * title). [canAddBullet] is true when the section already holds list items, so "+ Add" makes
+ * sense there (e.g. curating caller numbers).
+ */
+data class EditSection(
+    val id: Long,
+    val title: String,
+    val rows: List<EditRow>,
+    val canAddBullet: Boolean,
+)
+
+/**
+ * A built document the user previews and edits before it is rendered to PDF. Content is
+ * grouped by the document's own titles/headings into [sections]; only body paragraphs and
+ * list items are editable (titles, headings, stats and charts stay auto). Rows carry stable
+ * ids so bullets can be added/removed (e.g. curating the caller-number list) without index drift.
  */
 class EditableDocument internal constructor(
     private val fileSlug: String,
-    private val blocks: MutableList<Block>,
+    initial: List<Block>,
 ) {
-    /** Flatten the blocks into preview rows; pure-spacing gaps are omitted. */
-    fun items(): List<PreviewItem> = blocks.mapIndexedNotNull { i, b ->
-        when (b) {
-            is Block.Title -> PreviewItem(i, PreviewKind.Title, true, b.text, "Title")
-            is Block.Heading -> PreviewItem(i, PreviewKind.Heading, true, b.text, "Heading")
-            is Block.Body -> PreviewItem(i, PreviewKind.Body, true, b.text, "Paragraph")
-            is Block.Bullet -> PreviewItem(i, PreviewKind.Bullet, true, b.text, "Bullet")
-            is Block.Table -> PreviewItem(i, PreviewKind.Structural, false, "", "Table — ${b.headers.joinToString(" / ")}")
-            is Block.Pie -> PreviewItem(i, PreviewKind.Structural, false, "", "Chart — flagged vs normal (${b.flagged} / ${b.normal})")
-            is Block.BarChart -> PreviewItem(i, PreviewKind.Structural, false, "", "Chart — ${b.bars.size} bar${if (b.bars.size == 1) "" else "s"}")
-            Block.PageBreak -> PreviewItem(i, PreviewKind.Structural, false, "", "— page break —")
-            is Block.Gap -> null
+    private class Item(val id: Long, var block: Block)
+
+    private var seq = 0L
+    private val items = initial.map { Item(seq++, it) }.toMutableList()
+
+    private companion object { const val INTRO_ID = -1L }
+
+    /** Group the blocks into collapsible sections. Titles and headings each start a section. */
+    fun sections(): List<EditSection> {
+        val out = mutableListOf<EditSection>()
+        var secId = INTRO_ID
+        var secTitle = "Overview"
+        var started = false
+        var rows = mutableListOf<EditRow>()
+
+        fun flush() {
+            if (started || rows.isNotEmpty()) {
+                out.add(EditSection(secId, secTitle, rows.toList(), rows.any { it.kind == PreviewKind.Bullet }))
+            }
         }
+
+        items.forEach { item ->
+            when (val b = item.block) {
+                is Block.Title -> { flush(); secId = item.id; secTitle = b.text; started = true; rows = mutableListOf() }
+                is Block.Heading -> { flush(); secId = item.id; secTitle = b.text; started = true; rows = mutableListOf() }
+                is Block.Body -> rows.add(EditRow(item.id, PreviewKind.Body, true, false, b.text, "Paragraph"))
+                is Block.Bullet -> rows.add(EditRow(item.id, PreviewKind.Bullet, true, true, b.text, "Item"))
+                is Block.Table -> rows.add(EditRow(item.id, PreviewKind.Structural, false, false, "", "Table — ${b.headers.joinToString(" / ")}"))
+                is Block.Pie -> rows.add(EditRow(item.id, PreviewKind.Structural, false, false, "", "Chart — flagged vs normal (${b.flagged} / ${b.normal})"))
+                is Block.BarChart -> rows.add(EditRow(item.id, PreviewKind.Structural, false, false, "", "Chart — ${b.bars.size} bar${if (b.bars.size == 1) "" else "s"}"))
+                Block.PageBreak -> Unit
+                is Block.Gap -> Unit
+            }
+        }
+        flush()
+        return out
     }
 
-    /** Replace the text of an editable block; no-op for structural blocks. */
-    fun updateText(index: Int, newText: String) {
-        val b = blocks.getOrNull(index) ?: return
-        blocks[index] = when (b) {
-            is Block.Title -> b.copy(text = newText)
-            is Block.Heading -> b.copy(text = newText)
+    /** Replace the text of an editable row; no-op for structural/missing rows. */
+    fun updateText(id: Long, newText: String) {
+        val item = items.firstOrNull { it.id == id } ?: return
+        item.block = when (val b = item.block) {
             is Block.Body -> b.copy(text = newText)
             is Block.Bullet -> b.copy(text = newText)
             else -> b
         }
     }
 
+    /** Remove a row (used by the "–" on list items). */
+    fun removeRow(id: Long) {
+        items.removeAll { it.id == id }
+    }
+
+    /** Append a new bullet to the end of [sectionId]'s run; returns its id for focusing/editing. */
+    fun addBulletInSection(sectionId: Long, text: String = ""): Long {
+        val anchor = if (sectionId == INTRO_ID) -1 else items.indexOfFirst { it.id == sectionId }
+        var insertAt = anchor + 1
+        while (insertAt < items.size) {
+            val b = items[insertAt].block
+            if (b is Block.Title || b is Block.Heading) break
+            insertAt++
+        }
+        val item = Item(seq++, Block.Bullet(text))
+        items.add(insertAt, item)
+        return item.id
+    }
+
     /** Render the (possibly edited) blocks to a PDF in Downloads. */
     fun render(context: Context): DocumentGenerator.Result =
-        DocumentGenerator.writePdf(context, fileSlug, blocks)
+        DocumentGenerator.writePdf(context, fileSlug, items.map { it.block })
 }
 
 object DocumentGenerator {
@@ -152,7 +207,7 @@ object DocumentGenerator {
         type: DocumentType,
         profile: UserProfile,
         entries: List<CallEntry>,
-    ): EditableDocument = EditableDocument(type.fileSlug, buildDoc(context, type, profile, entries).toMutableList())
+    ): EditableDocument = EditableDocument(type.fileSlug, buildDoc(context, type, profile, entries))
 
     private fun buildDoc(
         context: Context,

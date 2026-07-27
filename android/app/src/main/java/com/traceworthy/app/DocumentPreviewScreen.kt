@@ -1,5 +1,6 @@
 package com.traceworthy.app
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -16,9 +17,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.PictureAsPdf
+import androidx.compose.material.icons.filled.RemoveCircleOutline
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -27,9 +32,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,11 +48,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.traceworthy.app.ui.CGCard
 
 /**
- * Full-screen preview/editor shown before a document is turned into a PDF. Text blocks
- * become editable fields; tables and charts appear as read-only chips (they are drawn
- * from the call data at render time). Tapping Generate applies the edits and writes the PDF.
+ * Full-screen preview/editor shown before a document is turned into a PDF. Content is
+ * grouped into collapsible sections that mirror the document's own headings. Only body
+ * paragraphs and list items are editable; list sections (e.g. caller numbers) get "+ Add"
+ * and a "–" per item so the list can be curated. Titles, stats and charts stay auto.
  */
 @Composable
 fun DocumentPreviewDialog(
@@ -53,8 +64,9 @@ fun DocumentPreviewDialog(
     onGenerated: (DocumentGenerator.Result) -> Unit,
 ) {
     val context = LocalContext.current
-    val items = remember(doc) { doc.items() }
-    val edits = remember(doc) { mutableStateMapOf<Int, String>() }
+    var sections by remember(doc) { mutableStateOf(doc.sections()) }
+    val edits = remember(doc) { mutableStateMapOf<Long, String>() }
+    val collapsed = remember(doc) { mutableStateMapOf<Long, Boolean>() }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -91,16 +103,31 @@ fun DocumentPreviewDialog(
                     item {
                         Spacer(Modifier.height(12.dp))
                         Text(
-                            "Review the document and edit any text before it becomes a PDF. " +
-                                "Tables and charts (shown as chips) are drawn from your call data and " +
-                                "aren't edited here.",
+                            "Tap a section to expand it. Edit the wording or curate lists (add or " +
+                                "remove items). Statistics and charts are drawn from your call data " +
+                                "and stay as-is.",
                             fontSize = 13.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
-                        Spacer(Modifier.height(14.dp))
+                        Spacer(Modifier.height(12.dp))
                     }
-                    items(items, key = { it.index }) { item ->
-                        PreviewRow(item, edits)
+                    items(sections, key = { it.id }) { section ->
+                        SectionCard(
+                            section = section,
+                            edits = edits,
+                            expanded = collapsed[section.id] != true,
+                            onToggle = { collapsed[section.id] = (collapsed[section.id] != true) },
+                            onAdd = {
+                                doc.addBulletInSection(section.id)
+                                sections = doc.sections()
+                                collapsed[section.id] = false
+                            },
+                            onRemove = { id ->
+                                doc.removeRow(id)
+                                edits.remove(id)
+                                sections = doc.sections()
+                            },
+                        )
                         Spacer(Modifier.height(10.dp))
                     }
                     item { Spacer(Modifier.height(8.dp)) }
@@ -120,7 +147,7 @@ fun DocumentPreviewDialog(
                     ) {
                         Button(
                             onClick = {
-                                edits.forEach { (i, t) -> doc.updateText(i, t) }
+                                edits.forEach { (id, t) -> doc.updateText(id, t) }
                                 onGenerated(doc.render(context))
                             },
                             shape = RoundedCornerShape(10.dp),
@@ -137,8 +164,65 @@ fun DocumentPreviewDialog(
 }
 
 @Composable
-private fun PreviewRow(item: PreviewItem, edits: SnapshotStateMap<Int, String>) {
-    if (!item.editable) {
+private fun SectionCard(
+    section: EditSection,
+    edits: SnapshotStateMap<Long, String>,
+    expanded: Boolean,
+    onToggle: () -> Unit,
+    onAdd: () -> Unit,
+    onRemove: (Long) -> Unit,
+) {
+    CGCard {
+        Row(
+            Modifier.fillMaxWidth().clickable { onToggle() },
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                if (expanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
+                contentDescription = if (expanded) "Collapse" else "Expand",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.width(6.dp))
+            Text(
+                section.title,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 15.sp,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f),
+            )
+            if (!expanded) {
+                Text(
+                    "${section.rows.count { it.editable }} field${if (section.rows.count { it.editable } == 1) "" else "s"}",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+
+        if (expanded) {
+            Spacer(Modifier.height(8.dp))
+            section.rows.forEach { row ->
+                RowEditor(row, edits, onRemove)
+                Spacer(Modifier.height(8.dp))
+            }
+            if (section.canAddBullet) {
+                TextButton(onClick = onAdd) {
+                    Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("Add item")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RowEditor(
+    row: EditRow,
+    edits: SnapshotStateMap<Long, String>,
+    onRemove: (Long) -> Unit,
+) {
+    if (!row.editable) {
         Surface(
             color = MaterialTheme.colorScheme.surfaceVariant,
             shape = RoundedCornerShape(8.dp),
@@ -154,39 +238,29 @@ private fun PreviewRow(item: PreviewItem, edits: SnapshotStateMap<Int, String>) 
                     modifier = Modifier.size(16.dp),
                 )
                 Spacer(Modifier.width(8.dp))
-                Text(
-                    item.label,
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Text(row.label, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
         return
     }
 
-    val value = edits[item.index] ?: item.text
-    val emphasized = item.kind == PreviewKind.Title || item.kind == PreviewKind.Heading
-    Column {
-        Text(
-            item.label.uppercase(),
-            fontSize = 11.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.tertiary,
-        )
-        Spacer(Modifier.height(2.dp))
+    val value = edits[row.id] ?: row.text
+    Row(verticalAlignment = Alignment.CenterVertically) {
         OutlinedTextField(
             value = value,
-            onValueChange = { edits[item.index] = it },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = item.kind == PreviewKind.Title,
-            textStyle = LocalTextStyle.current.copy(
-                fontSize = when (item.kind) {
-                    PreviewKind.Title -> 18.sp
-                    PreviewKind.Heading -> 15.sp
-                    else -> 14.sp
-                },
-                fontWeight = if (emphasized) FontWeight.SemiBold else FontWeight.Normal,
-            ),
+            onValueChange = { edits[row.id] = it },
+            modifier = Modifier.weight(1f),
+            singleLine = false,
+            textStyle = LocalTextStyle.current.copy(fontSize = 14.sp),
         )
+        if (row.removable) {
+            IconButton(onClick = { onRemove(row.id) }) {
+                Icon(
+                    Icons.Filled.RemoveCircleOutline,
+                    contentDescription = "Remove item",
+                    tint = MaterialTheme.colorScheme.error,
+                )
+            }
+        }
     }
 }
