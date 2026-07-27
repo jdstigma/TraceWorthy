@@ -12,9 +12,13 @@ val Navy = Color(0xFF0F1E33)        // primary — drawer, app bar, dark surface
 val NavyDeep = Color(0xFF0A1626)    // deepest navy (drawer bg in dark contexts)
 val NavyMuted = Color(0xFF243449)   // raised navy surface / dividers on navy
 
-val Teal = Color(0xFF1FBFA6)        // secondary — the one call-to-action accent
+val Teal = Color(0xFF1FBFA6)        // secondary — the call-to-action accent (buttons, selected nav)
 val TealDeep = Color(0xFF0F6E56)    // text/icons that sit on a teal fill
 val TealSoft = Color(0xFFE1F5EE)    // teal-tinted container background
+
+val Coral = Color(0xFFFF7A59)       // tertiary — warm accent from the app icon (header icons, status, emphasis, brand tile)
+val CoralDeep = Color(0xFF7A2E1A)   // text/icons that sit on a coral fill
+val CoralSoft = Color(0xFFFFE4DC)   // coral-tinted container background
 
 val FlagRed = Color(0xFFB00020)     // the harassment / flagged signal — reserved
 val FlagRedSoft = Color(0xFFFFE0E0) // flagged row background

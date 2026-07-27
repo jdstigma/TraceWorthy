@@ -307,7 +307,7 @@ private fun GroupListCard(
                         Icon(
                             Icons.Filled.Folder,
                             contentDescription = "Caller group",
-                            tint = MaterialTheme.colorScheme.secondary,
+                            tint = MaterialTheme.colorScheme.tertiary,
                             modifier = Modifier.size(18.dp),
                         )
                         Spacer(Modifier.width(8.dp))
@@ -345,7 +345,7 @@ private fun GroupListCard(
                         Text(
                             "${g.notedCalls.size} note${if (g.notedCalls.size == 1) "" else "s"}",
                             fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.secondary,
+                            color = MaterialTheme.colorScheme.tertiary,
                             fontWeight = FontWeight.Medium,
                         )
                     }
@@ -365,15 +365,15 @@ private fun GroupDetail(g: FlaggedGroup, onBack: () -> Unit, onUngroup: () -> Un
             Modifier.fillMaxWidth().clickable { onBack() }.padding(vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.secondary)
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.tertiary)
             Spacer(Modifier.width(8.dp))
-            Text("Flagged numbers", color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.Medium)
+            Text("Flagged numbers", color = MaterialTheme.colorScheme.tertiary, fontWeight = FontWeight.Medium)
         }
         Spacer(Modifier.height(12.dp))
 
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (g.isBranch) {
-                Icon(Icons.Filled.Folder, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
+                Icon(Icons.Filled.Folder, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary)
                 Spacer(Modifier.width(8.dp))
             }
             Text(

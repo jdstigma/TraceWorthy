@@ -32,6 +32,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.traceworthy.app.ui.theme.Teal
 import com.traceworthy.app.ui.theme.TealDeep
+import com.traceworthy.app.ui.theme.Coral
+import com.traceworthy.app.ui.theme.CoralDeep
 
 /**
  * First-run legal agreement. Must be accepted before the app is usable; declining
@@ -47,9 +49,9 @@ fun AgreementScreen(onAccept: () -> Unit, onDecline: () -> Unit) {
                 .padding(20.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Surface(shape = RoundedCornerShape(10.dp), color = Teal, modifier = Modifier.size(40.dp)) {
+                Surface(shape = RoundedCornerShape(10.dp), color = Coral, modifier = Modifier.size(40.dp)) {
                     Box(contentAlignment = Alignment.Center) {
-                        Icon(Icons.Filled.Shield, contentDescription = null, tint = TealDeep, modifier = Modifier.size(24.dp))
+                        Icon(Icons.Filled.Shield, contentDescription = null, tint = CoralDeep, modifier = Modifier.size(24.dp))
                     }
                 }
                 Spacer(Modifier.width(12.dp))

@@ -175,7 +175,7 @@ private fun CallRow(entry: CallEntry, onClick: () -> Unit) {
             Text(
                 "Note: $note",
                 fontSize = 13.sp,
-                color = MaterialTheme.colorScheme.secondary,
+                color = MaterialTheme.colorScheme.tertiary,
                 fontWeight = FontWeight.Medium,
                 modifier = Modifier.padding(top = 2.dp)
             )

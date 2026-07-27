@@ -31,6 +31,8 @@ import androidx.compose.ui.unit.sp
 import com.traceworthy.app.Severity
 import com.traceworthy.app.ui.theme.Teal
 import com.traceworthy.app.ui.theme.TealDeep
+import com.traceworthy.app.ui.theme.Coral
+import com.traceworthy.app.ui.theme.CoralDeep
 
 /** Small colored pill showing a call's severity tag. Renders nothing when Unset. */
 @Composable
@@ -137,18 +139,18 @@ fun ActionCard(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Surface(
                     shape = RoundedCornerShape(10.dp),
-                    color = Teal,
+                    color = Coral,
                     modifier = Modifier.size(36.dp),
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Icon(icon, contentDescription = null, tint = TealDeep, modifier = Modifier.size(20.dp))
+                        Icon(icon, contentDescription = null, tint = CoralDeep, modifier = Modifier.size(20.dp))
                     }
                 }
                 Spacer(Modifier.width(12.dp))
                 Column {
                     Text(
                         header,
-                        color = Teal,
+                        color = Coral,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold,
                     )
@@ -173,7 +175,7 @@ fun ActionCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 if (done) {
-                    Text("On file ✓", color = Teal, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                    Text("On file ✓", color = Coral, fontSize = 13.sp, fontWeight = FontWeight.Medium)
                 } else {
                     Spacer(Modifier.width(1.dp))
                 }

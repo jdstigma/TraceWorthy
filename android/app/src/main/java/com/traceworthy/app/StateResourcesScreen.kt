@@ -175,7 +175,7 @@ fun StateResourcesScreen(profile: UserProfile) {
         Spacer(Modifier.height(10.dp))
         CGCard {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Filled.LocalPolice, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
+                Icon(Icons.Filled.LocalPolice, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary)
                 Spacer(Modifier.width(10.dp))
                 Text("File a police report", fontWeight = FontWeight.SemiBold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
             }

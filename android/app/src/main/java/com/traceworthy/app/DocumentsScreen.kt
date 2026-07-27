@@ -116,7 +116,7 @@ private fun DocumentCard(type: DocumentType, emphasized: Boolean = false, onGene
             Icon(
                 if (emphasized) Icons.Filled.Description else Icons.Filled.PictureAsPdf,
                 contentDescription = null,
-                tint = if (emphasized) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary,
+                tint = if (emphasized) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary,
             )
             Spacer(Modifier.width(10.dp))
             Text(

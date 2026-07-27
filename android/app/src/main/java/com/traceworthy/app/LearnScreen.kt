@@ -85,7 +85,7 @@ private fun ArticleCard(article: Article) {
             Icon(
                 if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
                 contentDescription = if (expanded) "Collapse" else "Expand",
-                tint = MaterialTheme.colorScheme.secondary,
+                tint = MaterialTheme.colorScheme.tertiary,
             )
         }
         AnimatedVisibility(expanded) {

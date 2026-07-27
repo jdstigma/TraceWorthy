@@ -56,6 +56,8 @@ import com.traceworthy.app.ui.theme.Navy
 import com.traceworthy.app.ui.theme.SlateLight
 import com.traceworthy.app.ui.theme.Teal
 import com.traceworthy.app.ui.theme.TealDeep
+import com.traceworthy.app.ui.theme.Coral
+import com.traceworthy.app.ui.theme.CoralDeep
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -182,9 +184,9 @@ private fun DrawerSheet(current: Screen, onSelect: (Screen) -> Unit) {
             Modifier.padding(start = 20.dp, top = 24.dp, bottom = 20.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Surface(shape = RoundedCornerShape(10.dp), color = Teal, modifier = Modifier.size(36.dp)) {
+            Surface(shape = RoundedCornerShape(10.dp), color = Coral, modifier = Modifier.size(36.dp)) {
                 Box(contentAlignment = Alignment.Center) {
-                    Icon(Icons.Filled.Shield, contentDescription = null, tint = TealDeep, modifier = Modifier.size(22.dp))
+                    Icon(Icons.Filled.Shield, contentDescription = null, tint = CoralDeep, modifier = Modifier.size(22.dp))
                 }
             }
             Spacer(Modifier.width(12.dp))
