@@ -74,10 +74,6 @@ _(moved here when we pick them up)_
   SettingsStore, state hoisted above `TraceWorthyTheme` in MainActivity so it applies live.
   Polish: theme-aware bar-chart track (was hardcoded `0xFFEEEEEE`), preview dialog top bar
   uses `onPrimary`. _(in progress — pending on-device eyeball + release)_
-- State-aware recording consent: `RecordingConsent` enum + `Contacts.allPartyConsentStates`
-  / `consentFor(usps)` in StateContacts.kt; a state-aware consent card on State help (flips
-  one-party vs all-party from the selected state) with a strong not-legal-advice caveat.
-  Data helper is reusable by a future recording flow. _(in progress — pending release)_
 - Threat-keyword highlighting: `ThreatHighlight` (curated whole-word danger terms, conservative
   to avoid false signals) styles matches in red/semibold wherever notes render (Call log +
   Flagged numbers detail). _(in progress — pending release)_
@@ -93,8 +89,9 @@ _(moved here when we pick them up)_
   the mic — degraded, environment-dependent, and Google Play policy prohibits accessibility-based
   call recording anyway. A "record call" button would produce weak audio and give users false
   confidence in bad evidence, which contradicts the app's "documents, doesn't trace" honesty.
-  (The state-aware **recording-consent card** stays — it's useful general legal-awareness info for
-  users who record by other means; it no longer gates an in-app recorder.)
+  The state-aware **recording-consent card** (built earlier this session) and its `RecordingConsent`
+  / `consentFor` helpers were also removed — consent info is half-hearted with no recording action
+  behind it.
 
 - 🗑️ **Vet/adopt app name "SpoofProof"** (dropped 2026-07-27) — screened USPTO/Play Store/
   domain/collision. Rejected: (a) already used by other security software — the PortSwigger
