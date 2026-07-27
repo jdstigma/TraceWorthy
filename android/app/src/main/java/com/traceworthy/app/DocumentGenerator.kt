@@ -13,6 +13,7 @@ import android.net.Uri
 import android.os.Environment
 import android.provider.MediaStore
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
@@ -61,12 +62,16 @@ internal sealed interface Block {
     data class Table(val headers: List<String>, val rows: List<List<String>>) : Block
     data class Pie(val flagged: Int, val normal: Int) : Block
     data class BarChart(val bars: List<ChartBar>) : Block
+    data class Scatter(val dots: List<ScatterDot>) : Block
     data class Gap(val points: Float) : Block
     data object PageBreak : Block
 }
 
 /** One bar in a document chart. [highlight] draws it red (a flagged number). */
 internal data class ChartBar(val label: String, val value: Int, val highlight: Boolean)
+
+/** One call on the time scatter: [timeMillis] gives the date + time of day; [flagged] draws it red. */
+internal data class ScatterDot(val timeMillis: Long, val flagged: Boolean)
 
 /** What kind of preview row this is — drives how the editor renders it. */
 enum class PreviewKind { Body, Bullet, Structural }
@@ -137,6 +142,7 @@ class EditableDocument internal constructor(
                 is Block.Table -> rows.add(EditRow(item.id, PreviewKind.Structural, false, false, "", "Table — ${b.headers.joinToString(" / ")}"))
                 is Block.Pie -> rows.add(EditRow(item.id, PreviewKind.Structural, false, false, "", "Chart — flagged vs normal (${b.flagged} / ${b.normal})"))
                 is Block.BarChart -> rows.add(EditRow(item.id, PreviewKind.Structural, false, false, "", "Chart — ${b.bars.size} bar${if (b.bars.size == 1) "" else "s"}"))
+                is Block.Scatter -> rows.add(EditRow(item.id, PreviewKind.Structural, false, false, "", "Chart — calls over time (${b.dots.size} calls)"))
                 Block.PageBreak -> Unit
                 is Block.Gap -> Unit
             }
@@ -357,6 +363,40 @@ object DocumentGenerator {
                         val w = contentWidth * b.value / max
                         canvas.drawRect(MARGIN, y, MARGIN + w, y + 8f, if (b.highlight) fillRed else fillBlue)
                         y += 15f
+                    }
+                }
+                is Block.Scatter -> {
+                    val plotH = 150f
+                    val yLabelW = 30f
+                    ensure(plotH + 26f)
+                    val left = MARGIN + yLabelW
+                    val right = MARGIN + contentWidth
+                    val top = y
+                    val bottom = top + plotH
+                    val yLabels = listOf("12a", "6p", "12p", "6a", "12a")
+                    for (i in 0..4) {
+                        val yy = top + plotH * (i / 4f)
+                        canvas.drawLine(left, yy, right, yy, rule)
+                        canvas.drawText(yLabels[i], MARGIN, yy + 3f, body)
+                    }
+                    val dots = block.dots
+                    if (dots.isNotEmpty()) {
+                        val minT = dots.minOf { it.timeMillis }
+                        val maxT = dots.maxOf { it.timeMillis }
+                        val span = (maxT - minT).coerceAtLeast(1L).toFloat()
+                        dots.forEach { d ->
+                            val xf = (d.timeMillis - minT) / span
+                            val cal = Calendar.getInstance().apply { timeInMillis = d.timeMillis }
+                            val hourFrac = (cal.get(Calendar.HOUR_OF_DAY) + cal.get(Calendar.MINUTE) / 60f) / 24f
+                            canvas.drawCircle(left + (right - left) * xf, bottom - plotH * hourFrac, 2.5f, if (d.flagged) fillRed else fillBlue)
+                        }
+                        y = bottom + 4f
+                        canvas.drawText(rangeFmt.format(Date(minT)), left, y + body.textSize, body)
+                        val endLbl = rangeFmt.format(Date(maxT))
+                        canvas.drawText(endLbl, right - body.measureText(endLbl), y + body.textSize, body)
+                        y += body.textSize + 6f
+                    } else {
+                        y = bottom + 6f
                     }
                 }
                 is Block.Gap -> { y += block.points }
@@ -751,6 +791,9 @@ object DocumentGenerator {
             val flag = if (n.flaggedCount > 0) " — ${n.flaggedCount} flagged" else ""
             blocks.add(Block.Bullet("$nm: ${n.totalCount} calls$flag"))
         }
+        blocks.add(Block.Heading("Calls Over Time (Date × Time Of Day)"))
+        blocks.add(Block.Scatter(entries.map { ScatterDot(it.timestampMillis, it.isSuspicious) }))
+        blocks.add(Block.Body("Each dot is a call — the horizontal position is the date and the vertical position is the time of day. Flagged calls are red. This shows when calls arrive, including overnight clustering or bursts on particular dates."))
         blocks.addAll(flaggedNumberSection(entries, branches))
         blocks.add(Block.Gap(10f))
         blocks.add(Block.Body("This summary is generated from the device call log. A full per-call CSV is available via the Call log screen's Export."))
