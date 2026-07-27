@@ -98,7 +98,7 @@ fun CallLogScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun NoteDialog(
+fun NoteDialog(
     entry: CallEntry,
     onDismiss: () -> Unit,
     onSave: (String, Severity) -> Unit,

@@ -2,6 +2,7 @@ package com.traceworthy.app
 
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -23,12 +24,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -37,9 +40,18 @@ import java.util.Date
 import java.util.Locale
 
 @Composable
-fun AnalysisScreen(entries: List<CallEntry>) {
+fun AnalysisScreen(entries: List<CallEntry>, onNotesChanged: () -> Unit) {
     val context = LocalContext.current
     var rangeDays by remember { mutableIntStateOf(0) } // 0 = all time
+    var editing by remember { mutableStateOf<CallEntry?>(null) }
+
+    // Notes live per-call; group them by number so a number card can show and add them.
+    val notesByNumber = remember(entries) {
+        entries.filter { !it.note.isNullOrBlank() }.groupBy { it.number }
+    }
+    val latestByNumber = remember(entries) {
+        entries.groupBy { it.number }.mapValues { (_, calls) -> calls.maxByOrNull { it.timestampMillis }!! }
+    }
 
     val filtered = remember(entries, rangeDays) {
         if (rangeDays == 0) entries
@@ -134,7 +146,26 @@ fun AnalysisScreen(entries: List<CallEntry>) {
             Spacer(Modifier.height(4.dp))
             HorizontalDivider(color = MaterialTheme.colorScheme.outline)
         }
-        items(stats.perNumber) { n -> NumberStatRow(n) }
+        items(stats.perNumber) { n ->
+            NumberStatRow(
+                n = n,
+                notes = notesByNumber[n.number].orEmpty(),
+                onClick = { latestByNumber[n.number]?.let { editing = it } },
+            )
+        }
+    }
+
+    editing?.let { entry ->
+        NoteDialog(
+            entry = entry,
+            onDismiss = { editing = null },
+            onSave = { text, severity ->
+                NotesStore.set(context, entry.id, text)
+                NotesStore.setSeverity(context, entry.id, severity)
+                editing = null
+                onNotesChanged() // reload so the new note rides along everywhere
+            },
+        )
     }
 }
 
@@ -174,11 +205,12 @@ private fun StatLine(label: String, value: String, highlight: Boolean = false) {
 }
 
 @Composable
-private fun NumberStatRow(n: NumberStat) {
+private fun NumberStatRow(n: NumberStat, notes: List<CallEntry>, onClick: () -> Unit) {
     val fmt = remember { SimpleDateFormat("MMM d, yyyy HH:mm:ss", Locale.US) }
+    val noteFmt = remember { SimpleDateFormat("MMM d", Locale.US) }
     val bg = if (n.flaggedCount > 0) MaterialTheme.colorScheme.errorContainer else Color.Transparent
     Column(
-        Modifier.fillMaxWidth().background(bg).padding(vertical = 8.dp, horizontal = 4.dp)
+        Modifier.fillMaxWidth().clickable { onClick() }.background(bg).padding(vertical = 8.dp, horizontal = 4.dp)
     ) {
         Row(
             Modifier.fillMaxWidth(),
@@ -201,5 +233,36 @@ private fun NumberStatRow(n: NumberStat) {
         }
         Text("First: ${fmt.format(Date(n.firstSeenMillis))}", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text("Last:  ${fmt.format(Date(n.lastSeenMillis))}", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+        // Notes written in the call log for this number, surfaced here and tappable to add more.
+        val danger = MaterialTheme.colorScheme.error
+        if (notes.isEmpty()) {
+            Text(
+                "＋ Tap to add a note",
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.tertiary,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+        } else {
+            Spacer(Modifier.height(4.dp))
+            Text(
+                "Notes (${notes.size}):",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            notes.sortedByDescending { it.timestampMillis }.forEach { e ->
+                Text(
+                    buildAnnotatedString {
+                        append("${noteFmt.format(Date(e.timestampMillis))} · ")
+                        append(ThreatHighlight.annotate(e.note.orEmpty(), danger))
+                    },
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+            }
+        }
     }
 }

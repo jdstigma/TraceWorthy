@@ -167,7 +167,9 @@ fun TraceWorthyApp(
                     Screen.CallLog -> CallLogScreen(entries, onRefresh = {
                         if (granted) entries = CallLogRepository.readAll(context)
                     })
-                    Screen.Analysis -> AnalysisScreen(entries)
+                    Screen.Analysis -> AnalysisScreen(entries, onNotesChanged = {
+                        if (granted) entries = CallLogRepository.readAll(context)
+                    })
                     Screen.FlaggedNumbers -> FlaggedNumbersScreen(entries)
                     Screen.CallTrace -> CallTraceScreen()
                     Screen.Documents -> DocumentsScreen(entries, profile, onEditInfo = { go(Screen.MyInfo) })
