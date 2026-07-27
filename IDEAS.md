@@ -17,9 +17,8 @@ are in the Done section below.
 
 | # | Idea | Notes | Status |
 |---|------|-------|--------|
-| 1 | **Call recording (speakerphone) + transcribe** | Speakerphone acoustic capture + "recording in progress" announcement → audio file (evidence) + best-effort transcription to a note. Adds RECORD_AUDIO; **needs real-device testing** + a Play-Store-policy call. (Android blocks earpiece/telephony audio for app-store apps.) | ❄️ parked — build blind, can't verify without device |
-| 2 | **Active call monitoring / alerts** | Notify when a new flagged call is detected (background receiver). **Play Store call-log-policy risk**; needs device testing. | ❄️ parked — policy + device-testing gate |
-| 3 | **Attorney trademark clearance** | Formal clearance / manual USPTO search for **TraceWorthy** before a public Play Store release. Final gate; do last. **External — a real-world legal action, not a code task.** | 💡 proposed (end — pre-release) |
+| 1 | **Active call monitoring / alerts** | Notify when a new flagged call is detected (background receiver). **Play Store call-log-policy risk**; needs device testing. | ❄️ parked — policy + device-testing gate |
+| 2 | **Attorney trademark clearance** | Formal clearance / manual USPTO search for **TraceWorthy** before a public Play Store release. Final gate; do last. **External — a real-world legal action, not a code task.** | 💡 proposed (end — pre-release) |
 
 ---
 
@@ -86,6 +85,16 @@ _(moved here when we pick them up)_
 ---
 
 ## Parked / dropped
+
+- 🗑️ **Call recording (speakerphone) + transcribe** (dropped 2026-07-27) — technically infeasible
+  for a Play Store app. Android 10 (API 29, our minSdk) removed third-party access to the call
+  audio stream; `VOICE_CALL`/`VOICE_COMMUNICATION` sources are system/carrier-only, and Android 11
+  closed the accessibility-API loophole. The only thing possible is speakerphone room-capture via
+  the mic — degraded, environment-dependent, and Google Play policy prohibits accessibility-based
+  call recording anyway. A "record call" button would produce weak audio and give users false
+  confidence in bad evidence, which contradicts the app's "documents, doesn't trace" honesty.
+  (The state-aware **recording-consent card** stays — it's useful general legal-awareness info for
+  users who record by other means; it no longer gates an in-app recorder.)
 
 - 🗑️ **Vet/adopt app name "SpoofProof"** (dropped 2026-07-27) — screened USPTO/Play Store/
   domain/collision. Rejected: (a) already used by other security software — the PortSwigger
