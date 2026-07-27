@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.RemoveCircleOutline
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalTextStyle
@@ -180,7 +181,7 @@ private fun SectionCard(
             Icon(
                 if (expanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
                 contentDescription = if (expanded) "Collapse" else "Expand",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = MaterialTheme.colorScheme.tertiary,
             )
             Spacer(Modifier.width(6.dp))
             Text(
@@ -190,11 +191,12 @@ private fun SectionCard(
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.weight(1f),
             )
-            if (!expanded) {
+            val editableCount = section.rows.count { it.editable }
+            if (!expanded && editableCount > 0) {
                 Text(
-                    "${section.rows.count { it.editable }} field${if (section.rows.count { it.editable } == 1) "" else "s"}",
+                    "$editableCount editable",
                     fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = MaterialTheme.colorScheme.tertiary,
                 )
             }
         }
@@ -206,7 +208,10 @@ private fun SectionCard(
                 Spacer(Modifier.height(8.dp))
             }
             if (section.canAddBullet) {
-                TextButton(onClick = onAdd) {
+                TextButton(
+                    onClick = onAdd,
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.tertiary),
+                ) {
                     Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(6.dp))
                     Text("Add item")
@@ -222,7 +227,8 @@ private fun RowEditor(
     edits: SnapshotStateMap<Long, String>,
     onRemove: (Long) -> Unit,
 ) {
-    if (!row.editable) {
+    // Structural rows (tables/charts) — read-only info chip.
+    if (row.kind == PreviewKind.Structural) {
         Surface(
             color = MaterialTheme.colorScheme.surfaceVariant,
             shape = RoundedCornerShape(8.dp),
@@ -244,22 +250,49 @@ private fun RowEditor(
         return
     }
 
-    val value = edits[row.id] ?: row.text
+    // Editable — the narrative "Notes" field, or a user-added list item.
+    if (row.editable) {
+        val value = edits[row.id] ?: row.text
+        Column {
+            Text(
+                row.label.uppercase(),
+                fontSize = 11.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.tertiary,
+            )
+            Spacer(Modifier.height(2.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                OutlinedTextField(
+                    value = value,
+                    onValueChange = { edits[row.id] = it },
+                    modifier = Modifier.weight(1f),
+                    singleLine = false,
+                    textStyle = LocalTextStyle.current.copy(fontSize = 14.sp),
+                )
+                if (row.removable) {
+                    IconButton(onClick = { onRemove(row.id) }) {
+                        Icon(Icons.Filled.RemoveCircleOutline, contentDescription = "Remove item", tint = MaterialTheme.colorScheme.error)
+                    }
+                }
+            }
+        }
+        return
+    }
+
+    // Read-only body/list item — shown for context; lists still get a "–" to filter.
     Row(verticalAlignment = Alignment.CenterVertically) {
-        OutlinedTextField(
-            value = value,
-            onValueChange = { edits[row.id] = it },
+        if (row.kind == PreviewKind.Bullet) {
+            Text("•  ", fontSize = 14.sp, color = MaterialTheme.colorScheme.tertiary)
+        }
+        Text(
+            row.text,
+            fontSize = 14.sp,
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.weight(1f),
-            singleLine = false,
-            textStyle = LocalTextStyle.current.copy(fontSize = 14.sp),
         )
         if (row.removable) {
             IconButton(onClick = { onRemove(row.id) }) {
-                Icon(
-                    Icons.Filled.RemoveCircleOutline,
-                    contentDescription = "Remove item",
-                    tint = MaterialTheme.colorScheme.error,
-                )
+                Icon(Icons.Filled.RemoveCircleOutline, contentDescription = "Remove item", tint = MaterialTheme.colorScheme.error)
             }
         }
     }

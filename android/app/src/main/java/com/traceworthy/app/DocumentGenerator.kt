@@ -54,7 +54,8 @@ enum class DocumentType(val displayName: String, val fileSlug: String, val blurb
 internal sealed interface Block {
     data class Title(val text: String) : Block
     data class Heading(val text: String) : Block
-    data class Body(val text: String) : Block
+    /** [editable] marks the free-text narrative ("notes") the user may edit in the preview. */
+    data class Body(val text: String, val editable: Boolean = false) : Block
     data class Bullet(val text: String) : Block
     data class Table(val headers: List<String>, val rows: List<List<String>>) : Block
     data class Pie(val flagged: Int, val normal: Int) : Block
@@ -104,7 +105,7 @@ class EditableDocument internal constructor(
     private val fileSlug: String,
     initial: List<Block>,
 ) {
-    private class Item(val id: Long, var block: Block)
+    private class Item(val id: Long, var block: Block, val userAdded: Boolean = false)
 
     private var seq = 0L
     private val items = initial.map { Item(seq++, it) }.toMutableList()
@@ -129,8 +130,8 @@ class EditableDocument internal constructor(
             when (val b = item.block) {
                 is Block.Title -> { flush(); secId = item.id; secTitle = b.text; started = true; rows = mutableListOf() }
                 is Block.Heading -> { flush(); secId = item.id; secTitle = b.text; started = true; rows = mutableListOf() }
-                is Block.Body -> rows.add(EditRow(item.id, PreviewKind.Body, true, false, b.text, "Paragraph"))
-                is Block.Bullet -> rows.add(EditRow(item.id, PreviewKind.Bullet, true, true, b.text, "Item"))
+                is Block.Body -> rows.add(EditRow(item.id, PreviewKind.Body, b.editable, false, b.text, "Notes"))
+                is Block.Bullet -> rows.add(EditRow(item.id, PreviewKind.Bullet, item.userAdded, true, b.text, "Item"))
                 is Block.Table -> rows.add(EditRow(item.id, PreviewKind.Structural, false, false, "", "Table — ${b.headers.joinToString(" / ")}"))
                 is Block.Pie -> rows.add(EditRow(item.id, PreviewKind.Structural, false, false, "", "Chart — flagged vs normal (${b.flagged} / ${b.normal})"))
                 is Block.BarChart -> rows.add(EditRow(item.id, PreviewKind.Structural, false, false, "", "Chart — ${b.bars.size} bar${if (b.bars.size == 1) "" else "s"}"))
@@ -166,7 +167,7 @@ class EditableDocument internal constructor(
             if (b is Block.Title || b is Block.Heading) break
             insertAt++
         }
-        val item = Item(seq++, Block.Bullet(text))
+        val item = Item(seq++, Block.Bullet(text), userAdded = true)
         items.add(insertAt, item)
         return item.id
     }
@@ -606,7 +607,7 @@ object DocumentGenerator {
             )
         )
         blocks.add(Block.Heading("Description (Paste This)"))
-        blocks.add(Block.Body("I am receiving a sustained campaign of harassing phone calls to my cell phone, $phone. Over the period $first to $last I have logged ${stats.totalCalls} calls from ${stats.uniqueNumbers} distinct phone numbers. ${patternSentence(profile, stats)}"))
+        blocks.add(Block.Body("I am receiving a sustained campaign of harassing phone calls to my cell phone, $phone. Over the period $first to $last I have logged ${stats.totalCalls} calls from ${stats.uniqueNumbers} distinct phone numbers. ${patternSentence(profile, stats)}", editable = true))
         blocks.add(Block.Body("I did not consent to these calls. I am requesting FCC action against this illegal spoofing under the Truth in Caller ID Act and the TRACED Act."))
         blocks.add(Block.Body("Name: $name"))
         blocks.add(Block.Gap(10f))
@@ -635,7 +636,7 @@ object DocumentGenerator {
                     "Ongoing telephone harassment via spoofed caller ID."
             ),
             Block.Heading("Summary Of Evidence"),
-            Block.Body("Over the period $first to $last I have logged ${stats.totalCalls} calls from ${stats.uniqueNumbers} distinct phone numbers. ${patternSentence(profile, stats)}"),
+            Block.Body("Over the period $first to $last I have logged ${stats.totalCalls} calls from ${stats.uniqueNumbers} distinct phone numbers. ${patternSentence(profile, stats)}", editable = true),
         )
         blocks.add(Block.Heading("Flagged Vs Normal"))
         blocks.add(Block.Pie(stats.flaggedCalls, (stats.totalCalls - stats.flaggedCalls).coerceAtLeast(0)))
@@ -659,7 +660,7 @@ object DocumentGenerator {
             Block.Body("Call your carrier's fraud / harassment department (dial 611 from your phone, or use the customer-service number on your bill) and ask to open a documented harassment case."),
             Block.Gap(6f),
             Block.Heading("Word-For-Word Script"),
-            Block.Body("\"I'm a ${v(profile.carrier, "CARRIER")} customer and I'm being harassed by repeated calls from different numbers that I believe are spoofed. I want to:"),
+            Block.Body("\"I'm a ${v(profile.carrier, "CARRIER")} customer and I'm being harassed by repeated calls from different numbers that I believe are spoofed. I want to:", editable = true),
             Block.Bullet("Open a documented harassment case on my account."),
             Block.Bullet("Get a case / reference number for my records."),
             Block.Bullet("Turn on any free spam-blocking tools you offer."),

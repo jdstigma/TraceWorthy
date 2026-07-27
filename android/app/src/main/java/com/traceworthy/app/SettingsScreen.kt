@@ -69,8 +69,8 @@ fun SettingsScreen(
                         onClick = { onThemeModeChange(mode) },
                         label = { Text(mode.label) },
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MaterialTheme.colorScheme.secondary,
-                            selectedLabelColor = MaterialTheme.colorScheme.onSecondary,
+                            selectedContainerColor = MaterialTheme.colorScheme.tertiary,
+                            selectedLabelColor = MaterialTheme.colorScheme.onTertiary,
                         ),
                     )
                     Spacer(Modifier.width(8.dp))

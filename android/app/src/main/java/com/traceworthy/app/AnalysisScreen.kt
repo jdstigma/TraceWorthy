@@ -20,6 +20,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -171,12 +172,20 @@ fun AnalysisScreen(entries: List<CallEntry>, onNotesChanged: () -> Unit) {
 
 @Composable
 private fun SubHeader(title: String) {
-    Text(
-        title,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 18.sp,
-        color = MaterialTheme.colorScheme.onBackground,
-    )
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Surface(
+            color = MaterialTheme.colorScheme.tertiary,
+            shape = RoundedCornerShape(2.dp),
+            modifier = Modifier.size(width = 4.dp, height = 18.dp),
+        ) {}
+        Spacer(Modifier.width(8.dp))
+        Text(
+            title,
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 18.sp,
+            color = MaterialTheme.colorScheme.onBackground,
+        )
+    }
 }
 
 @Composable

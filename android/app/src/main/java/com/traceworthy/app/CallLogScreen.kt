@@ -5,6 +5,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -96,7 +98,7 @@ fun CallLogScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun NoteDialog(
     entry: CallEntry,
@@ -121,7 +123,7 @@ fun NoteDialog(
                 Spacer(Modifier.height(12.dp))
                 Text("How serious was it?", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.height(6.dp))
-                Row {
+                FlowRow {
                     listOf(Severity.Silent, Severity.Spoken, Severity.Threatening).forEach { s ->
                         FilterChip(
                             selected = severity == s,

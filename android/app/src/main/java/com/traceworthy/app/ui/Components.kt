@@ -55,16 +55,23 @@ fun SeverityBadge(severity: Severity, modifier: Modifier = Modifier) {
     }
 }
 
-/** Bold section heading used to break long screens into scannable blocks. */
+/** Bold section heading with a coral accent bar, to break long screens into scannable blocks. */
 @Composable
 fun SectionHeader(title: String, modifier: Modifier = Modifier) {
-    Text(
-        title,
-        modifier = modifier,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 18.sp,
-        color = MaterialTheme.colorScheme.onBackground,
-    )
+    Row(modifier, verticalAlignment = Alignment.CenterVertically) {
+        Surface(
+            color = MaterialTheme.colorScheme.tertiary,
+            shape = RoundedCornerShape(2.dp),
+            modifier = Modifier.size(width = 4.dp, height = 18.dp),
+        ) {}
+        Spacer(Modifier.width(8.dp))
+        Text(
+            title,
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 18.sp,
+            color = MaterialTheme.colorScheme.onBackground,
+        )
+    }
 }
 
 /** White, softly-rounded surface card — the default container on every screen. */
