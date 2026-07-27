@@ -501,7 +501,12 @@ private fun GroupDetail(g: FlaggedGroup, onBack: () -> Unit, onUngroup: () -> Un
                     }
                 }
                 call.note?.takeIf { it.isNotBlank() }?.let { note ->
-                    Text(note, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(top = 2.dp))
+                    Text(
+                        ThreatHighlight.annotate(note, MaterialTheme.colorScheme.error),
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(top = 2.dp),
+                    )
                 }
             }
         }

@@ -33,6 +33,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -172,8 +173,12 @@ private fun CallRow(entry: CallEntry, onClick: () -> Unit) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         entry.note?.let { note ->
+            val danger = MaterialTheme.colorScheme.error
             Text(
-                "Note: $note",
+                buildAnnotatedString {
+                    append("Note: ")
+                    append(ThreatHighlight.annotate(note, danger))
+                },
                 fontSize = 13.sp,
                 color = MaterialTheme.colorScheme.tertiary,
                 fontWeight = FontWeight.Medium,
