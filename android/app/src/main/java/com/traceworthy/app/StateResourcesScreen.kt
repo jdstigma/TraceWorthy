@@ -22,6 +22,7 @@ import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.LocalPolice
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -165,6 +166,49 @@ fun StateResourcesScreen(profile: UserProfile) {
             Text(
                 "Pick your state above, or set it once on the My info screen.",
                 fontSize = 13.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Spacer(Modifier.height(20.dp))
+
+        // --- Recording consent (state-aware) ---
+        SectionHeader("Recording a call")
+        Spacer(Modifier.height(10.dp))
+        val consent = Contacts.consentFor(selectedUsps)
+        val stateName = selected?.name ?: "Your state"
+        CGCard {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Filled.Mic, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary)
+                Spacer(Modifier.width(10.dp))
+                Text(
+                    consent.label + (selected?.let { " · ${it.usps}" } ?: ""),
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 16.sp,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+            Spacer(Modifier.height(6.dp))
+            Text(
+                when (consent) {
+                    RecordingConsent.AllParty ->
+                        "$stateName is generally an all-party consent state: you must tell the other " +
+                            "person you're recording (or have their OK) before recording a call. Recording " +
+                            "a harassing caller without that notice can itself break the law."
+                    RecordingConsent.OneParty ->
+                        "$stateName is generally a one-party consent state: because you're on the call, " +
+                            "you can usually record it without telling the other person. Federal law is " +
+                            "also one-party."
+                },
+                fontSize = 13.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "General guide only — not legal advice. Recording law varies and has exceptions " +
+                    "(phone vs. in person), and some states (Nevada, Montana, Connecticut, Oregon) are " +
+                    "debated. If the other party is in a different state, the stricter state's rule can " +
+                    "apply. Confirm your current state law before you record.",
+                fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }

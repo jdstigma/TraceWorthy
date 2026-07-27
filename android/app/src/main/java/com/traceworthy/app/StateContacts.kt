@@ -29,6 +29,12 @@ data class StateContact(
     val agUrl: String,
 )
 
+/** Whether recording a call you're part of needs only your consent, or everyone's. */
+enum class RecordingConsent(val label: String) {
+    OneParty("One-party consent"),
+    AllParty("All-party consent"),
+}
+
 object Contacts {
 
     val federal: List<FederalContact> = listOf(
@@ -54,6 +60,23 @@ object Contacts {
 
     /** Always-current government fallback if a state row below is ever outdated. */
     const val OFFICIAL_STATE_FINDER = "https://www.usa.gov/state-consumer"
+
+    /**
+     * States generally treated as ALL-party (everyone must consent) for recording a
+     * phone call. This is a GENERAL GUIDE ONLY — recording law varies and has important
+     * exceptions (in-person vs. phone, civil vs. criminal), and several states are
+     * genuinely debated (Nevada, Montana, Connecticut, Oregon). The UI shows a strong
+     * "verify before you record" caveat; never treat this as legal advice.
+     */
+    val allPartyConsentStates: Set<String> =
+        setOf("CA", "DE", "FL", "IL", "MD", "MA", "MT", "NV", "NH", "PA", "WA")
+
+    /** Best-effort consent classification for a USPS code; defaults to one-party. */
+    fun consentFor(usps: String?): RecordingConsent =
+        if (usps != null && usps.uppercase() in allPartyConsentStates)
+            RecordingConsent.AllParty
+        else
+            RecordingConsent.OneParty
 
     val states: List<StateContact> = listOf(
         StateContact("Alabama", "AL", "Alabama Attorney General", "https://www.alabamaag.gov/consumer-complaint/"),
