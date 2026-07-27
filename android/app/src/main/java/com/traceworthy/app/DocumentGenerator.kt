@@ -53,7 +53,8 @@ enum class DocumentType(val displayName: String, val fileSlug: String, val blurb
 /** A block of content in a generated document. */
 internal sealed interface Block {
     data class Title(val text: String) : Block
-    data class Heading(val text: String) : Block
+    /** [addable] marks a section whose list the user may extend with "+ Add" (e.g. caller numbers). */
+    data class Heading(val text: String, val addable: Boolean = false) : Block
     /** [editable] marks the free-text narrative ("notes") the user may edit in the preview. */
     data class Body(val text: String, val editable: Boolean = false) : Block
     data class Bullet(val text: String) : Block
@@ -117,19 +118,20 @@ class EditableDocument internal constructor(
         val out = mutableListOf<EditSection>()
         var secId = INTRO_ID
         var secTitle = "Overview"
+        var secAddable = false
         var started = false
         var rows = mutableListOf<EditRow>()
 
         fun flush() {
             if (started || rows.isNotEmpty()) {
-                out.add(EditSection(secId, secTitle, rows.toList(), rows.any { it.kind == PreviewKind.Bullet }))
+                out.add(EditSection(secId, secTitle, rows.toList(), secAddable && rows.any { it.kind == PreviewKind.Bullet }))
             }
         }
 
         items.forEach { item ->
             when (val b = item.block) {
-                is Block.Title -> { flush(); secId = item.id; secTitle = b.text; started = true; rows = mutableListOf() }
-                is Block.Heading -> { flush(); secId = item.id; secTitle = b.text; started = true; rows = mutableListOf() }
+                is Block.Title -> { flush(); secId = item.id; secTitle = b.text; secAddable = false; started = true; rows = mutableListOf() }
+                is Block.Heading -> { flush(); secId = item.id; secTitle = b.text; secAddable = b.addable; started = true; rows = mutableListOf() }
                 is Block.Body -> rows.add(EditRow(item.id, PreviewKind.Body, b.editable, false, b.text, "Notes"))
                 is Block.Bullet -> rows.add(EditRow(item.id, PreviewKind.Bullet, item.userAdded, true, b.text, "Item"))
                 is Block.Table -> rows.add(EditRow(item.id, PreviewKind.Structural, false, false, "", "Table — ${b.headers.joinToString(" / ")}"))
@@ -482,7 +484,7 @@ object DocumentGenerator {
         val remaining = groups.size - shown.size
 
         val heading = if (remaining > 0) "Most Significant Flagged Numbers (Top $CAP)" else "Flagged Numbers Detail"
-        val blocks = mutableListOf<Block>(Block.Heading(heading))
+        val blocks = mutableListOf<Block>(Block.Heading(heading, addable = true))
         shown.forEach { (key, calls) ->
             val memberNumbers = calls.map { it.number }.distinct()
             val isBranch = memberNumbers.size > 1 || branches[memberNumbers.first()] == key
