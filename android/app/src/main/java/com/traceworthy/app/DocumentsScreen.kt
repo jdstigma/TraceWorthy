@@ -2,6 +2,7 @@ package com.traceworthy.app
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -22,6 +23,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -37,7 +42,15 @@ fun DocumentsScreen(
     onEditInfo: () -> Unit,
 ) {
     val context = LocalContext.current
+    var previewDoc by remember { mutableStateOf<EditableDocument?>(null) }
+    var previewIsPacket by remember { mutableStateOf(false) }
 
+    fun openPreview(type: DocumentType) {
+        previewIsPacket = type == DocumentType.EvidencePacket
+        previewDoc = DocumentGenerator.buildEditable(context, type, profile, entries)
+    }
+
+    Box(Modifier.fillMaxSize()) {
     LazyColumn(Modifier.fillMaxSize().padding(16.dp)) {
         item {
             Text(
@@ -48,8 +61,8 @@ fun DocumentsScreen(
             )
             Spacer(Modifier.height(2.dp))
             Text(
-                "Each PDF is filled from your call log and My info, then saved to Downloads and " +
-                    "opened in the share sheet.",
+                "Each PDF is filled from your call log and My info. You can preview and edit the " +
+                    "text before it's saved to Downloads and opened in the share sheet.",
                 fontSize = 13.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -79,19 +92,9 @@ fun DocumentsScreen(
             }
         }
 
-        fun generate(type: DocumentType) {
-            val result = DocumentGenerator.generate(context, type, profile, entries)
-            if (result.uri != null) {
-                DocumentGenerator.share(context, result.uri)
-                Toast.makeText(context, "Saved: ${result.path}", Toast.LENGTH_LONG).show()
-            } else {
-                Toast.makeText(context, "Could not generate PDF", Toast.LENGTH_LONG).show()
-            }
-        }
-
         // The bundle comes first and is visually emphasized.
         item {
-            DocumentCard(DocumentType.EvidencePacket, emphasized = true) { generate(DocumentType.EvidencePacket) }
+            DocumentCard(DocumentType.EvidencePacket, emphasized = true) { openPreview(DocumentType.EvidencePacket) }
             Spacer(Modifier.height(16.dp))
             Text(
                 "Or generate documents individually",
@@ -103,9 +106,27 @@ fun DocumentsScreen(
         }
 
         items(DocumentType.entries.filter { it != DocumentType.EvidencePacket }) { type ->
-            DocumentCard(type) { generate(type) }
+            DocumentCard(type) { openPreview(type) }
             Spacer(Modifier.height(12.dp))
         }
+    }
+
+    previewDoc?.let { doc ->
+        DocumentPreviewDialog(
+            doc = doc,
+            generateLabel = if (previewIsPacket) "Generate packet PDF" else "Generate PDF",
+            onDismiss = { previewDoc = null },
+            onGenerated = { result ->
+                previewDoc = null
+                if (result.uri != null) {
+                    DocumentGenerator.share(context, result.uri)
+                    Toast.makeText(context, "Saved: ${result.path}", Toast.LENGTH_LONG).show()
+                } else {
+                    Toast.makeText(context, "Could not generate PDF", Toast.LENGTH_LONG).show()
+                }
+            },
+        )
+    }
     }
 }
 
@@ -135,7 +156,7 @@ private fun DocumentCard(type: DocumentType, emphasized: Boolean = false, onGene
         Spacer(Modifier.height(12.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
             Button(onClick = onGenerate, shape = RoundedCornerShape(10.dp)) {
-                Text(if (emphasized) "Generate packet PDF" else "Generate PDF")
+                Text(if (emphasized) "Preview packet" else "Preview & generate")
             }
         }
     }

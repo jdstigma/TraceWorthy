@@ -51,7 +51,7 @@ enum class DocumentType(val displayName: String, val fileSlug: String, val blurb
 }
 
 /** A block of content in a generated document. */
-private sealed interface Block {
+internal sealed interface Block {
     data class Title(val text: String) : Block
     data class Heading(val text: String) : Block
     data class Body(val text: String) : Block
@@ -64,7 +64,62 @@ private sealed interface Block {
 }
 
 /** One bar in a document chart. [highlight] draws it red (a flagged number). */
-private data class ChartBar(val label: String, val value: Int, val highlight: Boolean)
+internal data class ChartBar(val label: String, val value: Int, val highlight: Boolean)
+
+/** What kind of preview row this is — drives how the editor renders it. */
+enum class PreviewKind { Title, Heading, Body, Bullet, Structural }
+
+/**
+ * One row shown in the document preview/editor. [editable] text rows carry the current
+ * [text]; structural rows (tables, charts, page breaks) are read-only and described by [label].
+ */
+data class PreviewItem(
+    val index: Int,
+    val kind: PreviewKind,
+    val editable: Boolean,
+    val text: String,
+    val label: String,
+)
+
+/**
+ * A built document whose text the user can preview and edit before it is rendered to PDF.
+ * Holds the block list; edits are applied by block index, then [render] writes the PDF.
+ */
+class EditableDocument internal constructor(
+    private val fileSlug: String,
+    private val blocks: MutableList<Block>,
+) {
+    /** Flatten the blocks into preview rows; pure-spacing gaps are omitted. */
+    fun items(): List<PreviewItem> = blocks.mapIndexedNotNull { i, b ->
+        when (b) {
+            is Block.Title -> PreviewItem(i, PreviewKind.Title, true, b.text, "Title")
+            is Block.Heading -> PreviewItem(i, PreviewKind.Heading, true, b.text, "Heading")
+            is Block.Body -> PreviewItem(i, PreviewKind.Body, true, b.text, "Paragraph")
+            is Block.Bullet -> PreviewItem(i, PreviewKind.Bullet, true, b.text, "Bullet")
+            is Block.Table -> PreviewItem(i, PreviewKind.Structural, false, "", "Table — ${b.headers.joinToString(" / ")}")
+            is Block.Pie -> PreviewItem(i, PreviewKind.Structural, false, "", "Chart — flagged vs normal (${b.flagged} / ${b.normal})")
+            is Block.BarChart -> PreviewItem(i, PreviewKind.Structural, false, "", "Chart — ${b.bars.size} bar${if (b.bars.size == 1) "" else "s"}")
+            Block.PageBreak -> PreviewItem(i, PreviewKind.Structural, false, "", "— page break —")
+            is Block.Gap -> null
+        }
+    }
+
+    /** Replace the text of an editable block; no-op for structural blocks. */
+    fun updateText(index: Int, newText: String) {
+        val b = blocks.getOrNull(index) ?: return
+        blocks[index] = when (b) {
+            is Block.Title -> b.copy(text = newText)
+            is Block.Heading -> b.copy(text = newText)
+            is Block.Body -> b.copy(text = newText)
+            is Block.Bullet -> b.copy(text = newText)
+            else -> b
+        }
+    }
+
+    /** Render the (possibly edited) blocks to a PDF in Downloads. */
+    fun render(context: Context): DocumentGenerator.Result =
+        DocumentGenerator.writePdf(context, fileSlug, blocks)
+}
 
 object DocumentGenerator {
 
@@ -80,18 +135,41 @@ object DocumentGenerator {
 
     data class Result(val uri: Uri?, val path: String)
 
+    /** Build + render a document straight to PDF (no editing step). */
     fun generate(
         context: Context,
         type: DocumentType,
         profile: UserProfile,
         entries: List<CallEntry>,
-    ): Result {
+    ): Result = writePdf(context, type.fileSlug, buildDoc(context, type, profile, entries))
+
+    /**
+     * Build the document's blocks, wrapped so the UI can preview and edit the text
+     * before rendering. Structural blocks (tables/charts) pass through untouched.
+     */
+    fun buildEditable(
+        context: Context,
+        type: DocumentType,
+        profile: UserProfile,
+        entries: List<CallEntry>,
+    ): EditableDocument = EditableDocument(type.fileSlug, buildDoc(context, type, profile, entries).toMutableList())
+
+    private fun buildDoc(
+        context: Context,
+        type: DocumentType,
+        profile: UserProfile,
+        entries: List<CallEntry>,
+    ): List<Block> {
         val stats = CallStats.from(entries)
         val branches = BranchStore.all(context)
-        val blocks = buildBlocks(type, profile, stats, entries, branches)
+        return buildBlocks(type, profile, stats, entries, branches)
+    }
+
+    /** Render the given blocks to a PDF saved in Downloads via MediaStore. */
+    internal fun writePdf(context: Context, fileSlug: String, blocks: List<Block>): Result {
         val doc = renderPdf(blocks)
 
-        val fileName = "TraceWorthy_${type.fileSlug}_${stamp.format(Date())}.pdf"
+        val fileName = "TraceWorthy_${fileSlug}_${stamp.format(Date())}.pdf"
         val values = ContentValues().apply {
             put(MediaStore.Downloads.DISPLAY_NAME, fileName)
             put(MediaStore.Downloads.MIME_TYPE, "application/pdf")

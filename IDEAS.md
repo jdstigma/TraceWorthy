@@ -17,13 +17,12 @@ are in the Done section below.
 
 | # | Idea | Notes | Status |
 |---|------|-------|--------|
-| 1 | **Editable doc preview** | Preview/edit the filled-in document text before generating the PDF. | 💡 proposed (top) |
-| 2 | **Dark-mode polish pass** | Review every screen in dark mode; add a theme override toggle to the Settings screen. | 💡 proposed |
-| 3 | **State-aware recording-consent flag** | One-party vs all-party consent field in the per-state data so the recording flow warns based on the user's state (strong "verify" caveat). Precursor to #4. | 💡 proposed |
-| 4 | **Call recording (speakerphone) + transcribe** | Speakerphone acoustic capture + "recording in progress" announcement → audio file (evidence) + best-effort transcription to a note. Adds RECORD_AUDIO; needs real-device testing. (Android blocks earpiece/telephony audio for app-store apps.) | 💡 proposed |
-| 5 | **Active call monitoring / alerts** | Notify when a new flagged call is detected (background receiver). Scope carefully vs. Play Store call-log policy. | 💡 proposed (from initial prompt) |
-| 6 | **Threat-keyword highlighting** | Auto-highlight words like "threat/kill/address" in the notes timeline. Speculative — guard against false signals. | 💡 proposed |
-| 7 | **Attorney trademark clearance** | Formal clearance / manual USPTO search for **TraceWorthy** before a public Play Store release. Final gate; do last. | 💡 proposed (end — pre-release) |
+| 1 | **Dark-mode polish pass** | Review every screen in dark mode; add a theme override toggle to the Settings screen. | 💡 proposed (top) |
+| 2 | **State-aware recording-consent flag** | One-party vs all-party consent field in the per-state data so the recording flow warns based on the user's state (strong "verify" caveat). Precursor to #3. | 💡 proposed |
+| 3 | **Call recording (speakerphone) + transcribe** | Speakerphone acoustic capture + "recording in progress" announcement → audio file (evidence) + best-effort transcription to a note. Adds RECORD_AUDIO; needs real-device testing. (Android blocks earpiece/telephony audio for app-store apps.) | 💡 proposed |
+| 4 | **Active call monitoring / alerts** | Notify when a new flagged call is detected (background receiver). Scope carefully vs. Play Store call-log policy. | 💡 proposed (from initial prompt) |
+| 5 | **Threat-keyword highlighting** | Auto-highlight words like "threat/kill/address" in the notes timeline. Speculative — guard against false signals. | 💡 proposed |
+| 6 | **Attorney trademark clearance** | Formal clearance / manual USPTO search for **TraceWorthy** before a public Play Store release. Final gate; do last. | 💡 proposed (end — pre-release) |
 
 ---
 
@@ -70,6 +69,11 @@ _(moved here when we pick them up)_
 - Theme to match the icon: coral `#FF7A59` tertiary accent (brand tiles + header/section
   icons + status/emphasis text); teal stays for buttons/selected-nav, red stays for flagged
   _(in progress — pending on-device eyeball + release)_
+- Editable doc preview: tapping a document now opens a full-screen "Preview & edit" step
+  (DocumentPreviewScreen.kt) before the PDF is written. DocumentGenerator refactored —
+  `buildEditable()` returns an `EditableDocument` (text blocks editable, tables/charts shown
+  as read-only chips); `updateText()` applies edits by block index; `render()`/`writePdf()`
+  save to Downloads. Then it shares as before. _(in progress — pending on-device eyeball + release)_
 
 ---
 
