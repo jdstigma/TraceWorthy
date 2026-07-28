@@ -133,22 +133,28 @@ fun AnalysisScreen(entries: List<CallEntry>, onNotesChanged: () -> Unit) {
             if (topBars.isEmpty()) Text("No calls yet.") else BarChart(topBars)
             Spacer(Modifier.height(24.dp))
 
-            SubHeader("Calls over time")
+            SubHeader("Calls over time (last 90 days)")
             Spacer(Modifier.height(8.dp))
-            val scatterPoints = remember(filtered) {
-                filtered.map { ScatterPoint(it.timestampMillis, it.isSuspicious) }
+            val scatterEntries = remember(entries) { ScatterColors.last90Days(entries) }
+            val scatterTop5 = remember(scatterEntries) { ScatterColors.top5Numbers(scatterEntries) }
+            val scatterPoints = remember(scatterEntries, scatterTop5) {
+                val nums = scatterTop5.map { it.first }
+                scatterEntries.map { ScatterPoint(it.timestampMillis, Color(ScatterColors.colorFor(it.number, nums))) }
+            }
+            val scatterLegend = remember(scatterTop5) {
+                val nums = scatterTop5.map { it.first }
+                scatterTop5.map { (num, name) -> name to Color(ScatterColors.colorFor(num, nums)) }
             }
             ScatterChart(
                 points = scatterPoints,
-                flaggedColor = flaggedColor,
-                normalColor = Color(0xFF185FA5),
+                legend = scatterLegend,
                 axisColor = MaterialTheme.colorScheme.outline,
                 labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.fillMaxWidth(),
             )
             Spacer(Modifier.height(6.dp))
             Text(
-                "Each dot is a call — horizontal = date, vertical = time of day. Red = flagged.",
+                "Each dot is a call — horizontal = date, vertical = time of day. Dots are colored by the top-5 numbers (see legend); other numbers are gray.",
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

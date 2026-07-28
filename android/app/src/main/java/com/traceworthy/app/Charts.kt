@@ -70,24 +70,23 @@ fun ChartLegend(slices: List<Slice>) {
     }
 }
 
-/** One call plotted on the time scatter. */
-data class ScatterPoint(val timeMillis: Long, val flagged: Boolean)
+/** One call plotted on the time scatter, pre-colored by its number. */
+data class ScatterPoint(val timeMillis: Long, val color: Color)
 
 /**
- * Scatter of calls across dates (x) and time of day (y). Each dot is one call;
- * flagged calls are drawn in [flaggedColor]. Reveals patterns like overnight clustering.
+ * Scatter of calls across dates (x) and time of day (y). Each dot is one call, colored by
+ * which top-5 number it came from (see [legend]). Reveals overnight clustering and bursts.
  */
 @Composable
 fun ScatterChart(
     points: List<ScatterPoint>,
-    flaggedColor: Color,
-    normalColor: Color,
+    legend: List<Pair<String, Color>>,
     axisColor: Color,
     labelColor: Color,
     modifier: Modifier = Modifier,
 ) {
     if (points.isEmpty()) {
-        Text("No calls yet.", color = labelColor)
+        Text("No calls in the last 90 days.", color = labelColor)
         return
     }
     val dateFmt = remember { SimpleDateFormat("MMM d", Locale.US) }
@@ -98,7 +97,7 @@ fun ScatterChart(
         points.map { p ->
             val cal = Calendar.getInstance().apply { timeInMillis = p.timeMillis }
             val hourFrac = (cal.get(Calendar.HOUR_OF_DAY) + cal.get(Calendar.MINUTE) / 60f) / 24f
-            Triple((p.timeMillis - minT).toFloat() / span, hourFrac, p.flagged)
+            Triple((p.timeMillis - minT).toFloat() / span, hourFrac, p.color)
         }
     }
 
@@ -121,9 +120,9 @@ fun ScatterChart(
                     val yy = h * f
                     drawLine(axisColor, Offset(0f, yy), Offset(w, yy), strokeWidth = 1f)
                 }
-                plotted.forEach { (xf, hourFrac, flag) ->
+                plotted.forEach { (xf, hourFrac, color) ->
                     drawCircle(
-                        color = if (flag) flaggedColor else normalColor,
+                        color = color,
                         radius = 5f,
                         center = Offset(w * xf, h * (1f - hourFrac)),
                     )
@@ -137,6 +136,18 @@ fun ScatterChart(
         ) {
             Text(dateFmt.format(Date(minT)), fontSize = 10.sp, color = labelColor)
             Text(dateFmt.format(Date(maxT)), fontSize = 10.sp, color = labelColor)
+        }
+        if (legend.isNotEmpty()) {
+            Spacer(Modifier.height(8.dp))
+            Text("Top numbers", fontSize = 11.sp, color = labelColor)
+            Spacer(Modifier.height(4.dp))
+            legend.forEach { (label, color) ->
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 1.dp)) {
+                    Box(Modifier.size(12.dp).background(color))
+                    Spacer(Modifier.width(8.dp))
+                    Text(label, fontSize = 12.sp, color = labelColor)
+                }
+            }
         }
     }
 }

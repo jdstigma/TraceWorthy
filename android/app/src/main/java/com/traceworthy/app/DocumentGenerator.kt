@@ -62,7 +62,7 @@ internal sealed interface Block {
     data class Table(val headers: List<String>, val rows: List<List<String>>) : Block
     data class Pie(val flagged: Int, val normal: Int) : Block
     data class BarChart(val bars: List<ChartBar>) : Block
-    data class Scatter(val dots: List<ScatterDot>) : Block
+    data class Scatter(val dots: List<ScatterDot>, val legend: List<Pair<String, Long>>) : Block
     data class Gap(val points: Float) : Block
     data object PageBreak : Block
 }
@@ -70,8 +70,8 @@ internal sealed interface Block {
 /** One bar in a document chart. [highlight] draws it red (a flagged number). */
 internal data class ChartBar(val label: String, val value: Int, val highlight: Boolean)
 
-/** One call on the time scatter: [timeMillis] gives the date + time of day; [flagged] draws it red. */
-internal data class ScatterDot(val timeMillis: Long, val flagged: Boolean)
+/** One call on the time scatter: [timeMillis] gives the date + time of day; [colorRgb] is its top-5 color (ARGB). */
+internal data class ScatterDot(val timeMillis: Long, val colorRgb: Long)
 
 /** What kind of preview row this is — drives how the editor renders it. */
 enum class PreviewKind { Body, Bullet, Structural }
@@ -384,11 +384,13 @@ object DocumentGenerator {
                         val minT = dots.minOf { it.timeMillis }
                         val maxT = dots.maxOf { it.timeMillis }
                         val span = (maxT - minT).coerceAtLeast(1L).toFloat()
+                        val dotPaints = HashMap<Long, Paint>()
                         dots.forEach { d ->
                             val xf = (d.timeMillis - minT) / span
                             val cal = Calendar.getInstance().apply { timeInMillis = d.timeMillis }
                             val hourFrac = (cal.get(Calendar.HOUR_OF_DAY) + cal.get(Calendar.MINUTE) / 60f) / 24f
-                            canvas.drawCircle(left + (right - left) * xf, bottom - plotH * hourFrac, 2.5f, if (d.flagged) fillRed else fillBlue)
+                            val p = dotPaints.getOrPut(d.colorRgb) { fill(d.colorRgb.toInt()) }
+                            canvas.drawCircle(left + (right - left) * xf, bottom - plotH * hourFrac, 2.5f, p)
                         }
                         y = bottom + 4f
                         canvas.drawText(rangeFmt.format(Date(minT)), left, y + body.textSize, body)
@@ -397,6 +399,13 @@ object DocumentGenerator {
                         y += body.textSize + 6f
                     } else {
                         y = bottom + 6f
+                    }
+                    // Legend: top-5 numbers
+                    block.legend.forEach { (label, colorRgb) ->
+                        ensure(14f)
+                        canvas.drawRect(MARGIN, y + 2f, MARGIN + 10f, y + 12f, fill(colorRgb.toInt()))
+                        canvas.drawText(label, MARGIN + 16f, y + body.textSize, body)
+                        y += 15f
                     }
                 }
                 is Block.Gap -> { y += block.points }
@@ -791,9 +800,17 @@ object DocumentGenerator {
             val flag = if (n.flaggedCount > 0) " — ${n.flaggedCount} flagged" else ""
             blocks.add(Block.Bullet("$nm: ${n.totalCount} calls$flag"))
         }
-        blocks.add(Block.Heading("Calls Over Time (Date × Time Of Day)"))
-        blocks.add(Block.Scatter(entries.map { ScatterDot(it.timestampMillis, it.isSuspicious) }))
-        blocks.add(Block.Body("Each dot is a call — the horizontal position is the date and the vertical position is the time of day. Flagged calls are red. This shows when calls arrive, including overnight clustering or bursts on particular dates."))
+        val scEntries = ScatterColors.last90Days(entries)
+        val scTop5 = ScatterColors.top5Numbers(scEntries)
+        val scNums = scTop5.map { it.first }
+        blocks.add(Block.Heading("Calls Over Time — Last 90 Days (Date × Time Of Day)"))
+        blocks.add(
+            Block.Scatter(
+                dots = scEntries.map { ScatterDot(it.timestampMillis, ScatterColors.colorFor(it.number, scNums)) },
+                legend = scTop5.map { (num, name) -> name to ScatterColors.colorFor(num, scNums) },
+            )
+        )
+        blocks.add(Block.Body("Each dot is a call — the horizontal position is the date and the vertical position is the time of day. Dots are colored by the top-5 most-called numbers (see legend); other numbers are gray. This shows when calls arrive, including overnight clustering or bursts on particular dates."))
         blocks.addAll(flaggedNumberSection(entries, branches))
         blocks.add(Block.Gap(10f))
         blocks.add(Block.Body("This summary is generated from the device call log. A full per-call CSV is available via the Call log screen's Export."))
