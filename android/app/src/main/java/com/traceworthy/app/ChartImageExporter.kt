@@ -56,7 +56,7 @@ object ChartImageExporter {
     private fun render(stats: CallStats, entries: List<CallEntry>, rangeLabel: String): Bitmap {
         val w = 1000
         val topNumbers = stats.perNumber.take(5)
-        val h = 720 + topNumbers.size * 80 + 760
+        val h = 720 + topNumbers.size * 80 + 480
         val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
         val c = Canvas(bmp)
         c.drawColor(AColor.WHITE)
@@ -158,15 +158,6 @@ object ChartImageExporter {
         } else {
             y = plotBottom + 38f
             c.drawText("No calls in the last 90 days.", plotLeft, y, body)
-        }
-
-        // Legend: top-5 numbers
-        y += 54f
-        c.drawText("Top numbers", 40f, y, h2)
-        scTop5.forEachIndexed { i, (_, name) ->
-            y += 44f
-            c.drawRect(40f, y - 26f, 74f, y + 4f, dotPaints.getValue(ScatterColors.top5[i]))
-            c.drawText(name, 90f, y, body)
         }
 
         return bmp

@@ -62,7 +62,7 @@ internal sealed interface Block {
     data class Table(val headers: List<String>, val rows: List<List<String>>) : Block
     data class Pie(val flagged: Int, val normal: Int) : Block
     data class BarChart(val bars: List<ChartBar>) : Block
-    data class Scatter(val dots: List<ScatterDot>, val legend: List<Pair<String, Long>>) : Block
+    data class Scatter(val dots: List<ScatterDot>) : Block
     data class Gap(val points: Float) : Block
     data object PageBreak : Block
 }
@@ -399,13 +399,6 @@ object DocumentGenerator {
                         y += body.textSize + 6f
                     } else {
                         y = bottom + 6f
-                    }
-                    // Legend: top-5 numbers
-                    block.legend.forEach { (label, colorRgb) ->
-                        ensure(14f)
-                        canvas.drawRect(MARGIN, y + 2f, MARGIN + 10f, y + 12f, fill(colorRgb.toInt()))
-                        canvas.drawText(label, MARGIN + 16f, y + body.textSize, body)
-                        y += 15f
                     }
                 }
                 is Block.Gap -> { y += block.points }
@@ -804,12 +797,7 @@ object DocumentGenerator {
         val scTop5 = ScatterColors.top5Numbers(scEntries)
         val scNums = scTop5.map { it.first }
         blocks.add(Block.Heading("Calls Over Time — Last 90 Days (Date × Time Of Day)"))
-        blocks.add(
-            Block.Scatter(
-                dots = scEntries.map { ScatterDot(it.timestampMillis, ScatterColors.colorFor(it.number, scNums)) },
-                legend = scTop5.map { (num, name) -> name to ScatterColors.colorFor(num, scNums) },
-            )
-        )
+        blocks.add(Block.Scatter(scEntries.map { ScatterDot(it.timestampMillis, ScatterColors.colorFor(it.number, scNums)) }))
         blocks.add(Block.Body("Each dot is a call — the horizontal position is the date and the vertical position is the time of day. Dots are colored by the top-5 most-called numbers (see legend); other numbers are gray. This shows when calls arrive, including overnight clustering or bursts on particular dates."))
         blocks.addAll(flaggedNumberSection(entries, branches))
         blocks.add(Block.Gap(10f))

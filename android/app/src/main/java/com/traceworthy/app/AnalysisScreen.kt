@@ -141,13 +141,8 @@ fun AnalysisScreen(entries: List<CallEntry>, onNotesChanged: () -> Unit) {
                 val nums = scatterTop5.map { it.first }
                 scatterEntries.map { ScatterPoint(it.timestampMillis, Color(ScatterColors.colorFor(it.number, nums))) }
             }
-            val scatterLegend = remember(scatterTop5) {
-                val nums = scatterTop5.map { it.first }
-                scatterTop5.map { (num, name) -> name to Color(ScatterColors.colorFor(num, nums)) }
-            }
             ScatterChart(
                 points = scatterPoints,
-                legend = scatterLegend,
                 axisColor = MaterialTheme.colorScheme.outline,
                 labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.fillMaxWidth(),

@@ -80,7 +80,6 @@ data class ScatterPoint(val timeMillis: Long, val color: Color)
 @Composable
 fun ScatterChart(
     points: List<ScatterPoint>,
-    legend: List<Pair<String, Color>>,
     axisColor: Color,
     labelColor: Color,
     modifier: Modifier = Modifier,
@@ -136,18 +135,6 @@ fun ScatterChart(
         ) {
             Text(dateFmt.format(Date(minT)), fontSize = 10.sp, color = labelColor)
             Text(dateFmt.format(Date(maxT)), fontSize = 10.sp, color = labelColor)
-        }
-        if (legend.isNotEmpty()) {
-            Spacer(Modifier.height(8.dp))
-            Text("Top numbers", fontSize = 11.sp, color = labelColor)
-            Spacer(Modifier.height(4.dp))
-            legend.forEach { (label, color) ->
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 1.dp)) {
-                    Box(Modifier.size(12.dp).background(color))
-                    Spacer(Modifier.width(8.dp))
-                    Text(label, fontSize = 12.sp, color = labelColor)
-                }
-            }
         }
     }
 }
