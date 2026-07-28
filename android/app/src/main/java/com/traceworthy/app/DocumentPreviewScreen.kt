@@ -67,7 +67,7 @@ fun DocumentPreviewDialog(
     val context = LocalContext.current
     var sections by remember(doc) { mutableStateOf(doc.sections()) }
     val edits = remember(doc) { mutableStateMapOf<Long, String>() }
-    val collapsed = remember(doc) { mutableStateMapOf<Long, Boolean>() }
+    val expandedMap = remember(doc) { mutableStateMapOf<Long, Boolean>() }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -116,12 +116,12 @@ fun DocumentPreviewDialog(
                         SectionCard(
                             section = section,
                             edits = edits,
-                            expanded = collapsed[section.id] != true,
-                            onToggle = { collapsed[section.id] = (collapsed[section.id] != true) },
+                            expanded = expandedMap[section.id] == true,
+                            onToggle = { expandedMap[section.id] = (expandedMap[section.id] != true) },
                             onAdd = {
                                 doc.addBulletInSection(section.id)
                                 sections = doc.sections()
-                                collapsed[section.id] = false
+                                expandedMap[section.id] = true
                             },
                             onRemove = { id ->
                                 doc.removeRow(id)
