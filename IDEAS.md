@@ -19,6 +19,12 @@ are in the Done section below.
 |---|------|-------|--------|
 | 1 | **Active call monitoring / alerts** | Notify when a new flagged call is detected (background receiver). **Play Store call-log-policy risk**; needs device testing. | ❄️ parked — policy + device-testing gate |
 | 2 | **Attorney trademark clearance** | Formal clearance / manual USPTO search for **TraceWorthy** before a public Play Store release. Final gate; do last. **External — a real-world legal action, not a code task.** | 💡 proposed (end — pre-release) |
+| 3 | **Call category tags** | Per-call or per-number category tags beyond severity: Spam, Political Campaign, Robocall, Telemarketer, Debt Collector, Scam/Fraud, Survey/Polling, Wrong Number, Personal/Known Harasser, Unknown. | 💡 proposed |
+| 4 | **Learn article: unmasking blocked/private calls** | TraceWorthy can't unmask *67/blocked calls itself (requires carrier-level PRI/SS7 access, not app-level). Add a Learn article documenting TrapCall-style conditional-call-forwarding services as a companion tool, and let the revealed number get fed into TraceWorthy's existing note/CSV pipeline. | 💡 proposed |
+| 5 | **Reorder Evidence Packet sections by real-world task sequence** | Packet section order (`DocumentGenerator.kt` ~L599-603) is currently EvidenceSummary → IncidentTimeline → PoliceReport → FccComplaint → CarrierScript. Reorder to match the sequence the user should actually approach/file these steps in, not the current arbitrary order. | 💡 proposed |
+| 6 | **In-app download link for the desktop companion** | Surface a link/button in the app (Learn or Home) pointing to the PC toolkit (TraceWorthy.exe / traceworthy_launcher.py) release download, so users discover the desktop companion without leaving the app. | 💡 proposed |
+| 7 | **Move Harassment Type off the profile, make it call-based** | `HarassmentType` (Silent/Aggressive/Both) is currently a single global field on `UserProfile`/My info. Remove it from My info and make it per-call instead, so each call/note can be tagged with its own harassment type rather than one setting applying to every call. | 💡 proposed |
+| 8 | **Incident Timeline: windowed views + slicer + tags-at-top** | Multi-part: (a) beyond user notes/tags, add 14/30/60/120-day windowed views to the Incident Timeline, each shown as its own tab on the timeline screen; (b) within a window, only surface numbers/entries with tagged count > 2; (c) add a slicer/filter (all calls / flagged / legitimate) that applies across the new windowed timeline views; (d) when the Incident Timeline doc is generated, if user tags/notes exist, list them at the top of the document. | 💡 proposed |
 
 ---
 
@@ -64,16 +70,16 @@ _(moved here when we pick them up)_
 - #4 "Start here" flow + FAQ in Learn — v1.5.0
 - Theme to match the icon: coral `#FF7A59` tertiary accent (brand tiles + header/section
   icons + status/emphasis text); teal stays for buttons/selected-nav, red stays for flagged
-  _(in progress — pending on-device eyeball + release)_
+  — v1.6.0
 - Editable doc preview: tapping a document now opens a full-screen "Preview & edit" step
   (DocumentPreviewScreen.kt) before the PDF is written. DocumentGenerator refactored —
   `buildEditable()` returns an `EditableDocument` (text blocks editable, tables/charts shown
   as read-only chips); `updateText()` applies edits by block index; `render()`/`writePdf()`
-  save to Downloads. Then it shares as before. _(in progress — pending on-device eyeball + release)_
+  save to Downloads. Then it shares as before. — v1.6.0
 - Dark mode: persisted Appearance toggle (System/Light/Dark) in Settings — `ThemeMode` in
   SettingsStore, state hoisted above `TraceWorthyTheme` in MainActivity so it applies live.
   Polish: theme-aware bar-chart track (was hardcoded `0xFFEEEEEE`), preview dialog top bar
-  uses `onPrimary`. _(in progress — pending on-device eyeball + release)_
+  uses `onPrimary`. — v1.6.0
 - Threat-keyword highlighting: `ThreatHighlight` (curated whole-word danger terms, conservative
   to avoid false signals) styles matches in red/semibold wherever notes render (Call log +
   Flagged numbers detail). _(in progress — pending release)_
