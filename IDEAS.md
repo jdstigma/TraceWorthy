@@ -82,15 +82,17 @@ _(moved here when we pick them up)_
   uses `onPrimary`. — v1.6.0
 - Threat-keyword highlighting: `ThreatHighlight` (curated whole-word danger terms, conservative
   to avoid false signals) styles matches in red/semibold wherever notes render (Call log +
-  Flagged numbers detail). _(in progress — pending release)_
+  Flagged numbers detail). — v1.6.0
 - Doc preview redesign: replaced per-field editing with collapsible sections (grouped by the
   document's own titles/headings). Only body paragraphs + list items are editable; list sections
   get "+ Add" and a "–" per item to curate (e.g. caller numbers). Stable-id model in
-  EditableDocument (`sections()`/`updateText(id)`/`removeRow`/`addBulletInSection`). _(in progress — pending release)_
+  EditableDocument (`sections()`/`updateText(id)`/`removeRow`/`addBulletInSection`). — v1.6.0
 - Notes ↔ Analysis: number cards on the Analysis screen now show the call-log notes for that
   number (threat-highlighted) and are tappable to add a note (targets the number's most recent
   call, so it also shows in the call log). Shared `NoteDialog`; AnalysisScreen gained an
-  `onNotesChanged` reload callback. _(in progress — pending release)_
+  `onNotesChanged` reload callback. — v1.6.0
+- Calls-over-time scatter (date × time of day), 90-day window, dots colored by top-5 numbers —
+  Analysis screen + PNG export + Evidence Summary/packet PDF. — v1.6.0
 
 ---
 
