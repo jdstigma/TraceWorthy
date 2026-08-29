@@ -56,15 +56,21 @@ your iPhone to this Mac** → tick **Encrypt local backup** → set a password �
    otherwise). Backups marked `[encrypted]` are the ones that will work.
 2. Type the **backup password** from Step 2.
 3. Leave *"include FaceTime calls"* unticked unless you need them.
-4. Click **Extract call history**. This writes **`iphone_calls.csv`** next to the
-   program and prints how many calls (and how many flagged) it found.
+4. Click **Extract call history**. This writes **`iphone_calls.csv`** into
+   `Documents\TraceWorthy\` and prints how many calls (and how many flagged) it
+   found. If it says *"No calls found"* or *"filtered out"*, click **Inspect
+   backup** for a full breakdown, and see Troubleshooting below.
 
 **Command line** equivalent:
 
 ```bash
 python -m iphone.cli list                                   # confirm the backup is found
 python -m iphone.cli csv --backup auto --password "YOUR-BACKUP-PASSWORD"
+python -m iphone.cli inspect --backup auto --password "..."  # diagnose "no calls"
 ```
+
+`csv` takes `--facetime` (include FaceTime) and `--include-app-calls` (include
+WhatsApp / other VoIP apps); by default only cellular phone calls are exported.
 
 That's the iPhone log file done. `iphone_calls.csv` is byte-compatible with the
 Android app's export, so `../analysis/analyze_calls.py` also reads it directly.
@@ -94,7 +100,7 @@ python -m iphone.cli packet --csv iphone_calls.csv --profile traceworthy_profile
 
 | File | Purpose |
 |---|---|
-| `iphone_calls.csv` | The extracted call log (same format as the Android app's export) |
+| `Documents\TraceWorthy\iphone_calls.csv` | The extracted call log (same format as the Android app's export) |
 | `TraceWorthy_evidence_summary_*.pdf` | One-page stats + charts to attach to any filing |
 | `TraceWorthy_incident_timeline_*.pdf` | Chronological log (from the notes added in Step 4) |
 | `TraceWorthy_police_report_*.pdf` | Cover note for police so they can subpoena the carrier |
@@ -119,4 +125,7 @@ python -m iphone.cli packet --csv iphone_calls.csv --profile traceworthy_profile
 | "Call history is not in this backup" | The backup is unencrypted. Redo Step 2 with **Encrypt local backup** ticked. |
 | "Wrong backup password" | Use the password set when encryption was turned on — not the iPhone passcode or Apple ID. |
 | "No iPhone backups found" | Make a backup first, then **Refresh**. Or **Browse…** to the folder that contains `Manifest.plist`. |
+| "…has no records (table … is empty)" | The device isn't keeping call history locally. On the iPhone, toggle **Settings → [name] → iCloud → Call History OFF**, wait a minute, make a **fresh encrypted backup**, and try again. Or use carrier records. |
+| "All N records were filtered out (… FaceTime / third-party app)" | The backup only has FaceTime / app calls. Tick *"include FaceTime calls"* and/or *"include third-party app calls"* and extract again. |
+| Extract works but the count looks low | iOS keeps only ~the last 1,000 calls. Get the full history from your carrier. |
 | Encrypted backup, no password saved anywhere | Apple can't recover it. Turn encryption off and back on in the backup app to set a new one, then back up again. |

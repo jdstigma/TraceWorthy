@@ -23,8 +23,10 @@ CSV_HEADER = ["Timestamp", "Number", "ContactName", "Type", "DurationSeconds", "
 
 # ZCALLTYPE values (matches iLEAPP's decoding).
 CALLTYPE_PHONE = 1
+CALLTYPE_THIRD_PARTY = 0
 CALLTYPE_FACETIME_VIDEO = 8
 CALLTYPE_FACETIME_AUDIO = 16
+FACETIME_TYPES = {CALLTYPE_FACETIME_VIDEO, CALLTYPE_FACETIME_AUDIO}
 
 DEFAULT_FLAG_THRESHOLD_SECONDS = 15
 
@@ -139,38 +141,71 @@ def _table_columns(con: sqlite3.Connection, table: str) -> set[str]:
     return {r[1] for r in con.execute(f"PRAGMA table_info({table})")}
 
 
+class NoCallRecords(ValueError):
+    """The call-history table exists but holds no rows (call history likely lives in iCloud)."""
+
+
+def _call_table(con: sqlite3.Connection) -> str:
+    """The table holding call records. ZCALLRECORD on every iOS seen so far, but
+    fall back to anything that looks right so a schema change fails soft."""
+    names = [r[0] for r in con.execute("SELECT name FROM sqlite_master WHERE type='table'")]
+    if "ZCALLRECORD" in names:
+        return "ZCALLRECORD"
+    for n in names:
+        cols = _table_columns(con, n)
+        if "ZADDRESS" in cols and "ZDATE" in cols and "ZDURATION" in cols:
+            return n
+    raise ValueError("No call-records table — this does not look like a CallHistory.storedata file.")
+
+
 def parse(
     storedata_path: str,
     addressbook_path: str | None = None,
     *,
     include_facetime: bool = False,
+    include_app_calls: bool = False,
     flag_threshold_seconds: int = DEFAULT_FLAG_THRESHOLD_SECONDS,
 ) -> list[Call]:
     con = sqlite3.connect(f"file:{storedata_path}?mode=ro", uri=True)
     try:
-        cols = _table_columns(con, "ZCALLRECORD")
-        if not cols:
-            raise ValueError(
-                "No ZCALLRECORD table — this does not look like a CallHistory.storedata file."
-            )
+        table = _call_table(con)
+        cols = _table_columns(con, table)
+        has_type = "ZCALLTYPE" in cols
         has_name = "ZNAME" in cols
         has_answered = "ZANSWERED" in cols
         select = [
-            "ZADDRESS", "ZDATE", "ZDURATION", "ZCALLTYPE", "ZORIGINATED",
+            "ZADDRESS", "ZDATE", "ZDURATION",
+            "ZCALLTYPE" if has_type else "1 AS ZCALLTYPE",
+            "ZORIGINATED" if "ZORIGINATED" in cols else "0 AS ZORIGINATED",
             "ZANSWERED" if has_answered else "1 AS ZANSWERED",
             "ZNAME" if has_name else "NULL AS ZNAME",
         ]
         rows = con.execute(
-            f"SELECT {', '.join(select)} FROM ZCALLRECORD ORDER BY ZDATE"
+            f"SELECT {', '.join(select)} FROM '{table}' ORDER BY ZDATE"
         ).fetchall()
     finally:
         con.close()
 
+    if not rows:
+        raise NoCallRecords(
+            f"The call-history database in this backup has no records (table '{table}' is empty).\n"
+            "This usually means Call History is syncing to iCloud rather than being stored on the "
+            "device. On the iPhone: Settings > [your name] > iCloud > See All > check whether "
+            "\"Call History\" / iCloud Drive is on. Otherwise, request call records from your carrier."
+        )
+
     contacts = load_contact_index(addressbook_path)
     calls: list[Call] = []
+    dropped_types: dict[int, int] = {}
     for address, zdate, zdur, ztype, zorig, zans, zname in rows:
-        ztype = int(ztype or 0)
-        if ztype != CALLTYPE_PHONE and not (include_facetime and ztype in (CALLTYPE_FACETIME_VIDEO, CALLTYPE_FACETIME_AUDIO)):
+        ztype = int(ztype) if ztype is not None else CALLTYPE_PHONE
+        keep = True
+        if ztype in FACETIME_TYPES:
+            keep = include_facetime
+        elif ztype == CALLTYPE_THIRD_PARTY:
+            keep = include_app_calls
+        if not keep:
+            dropped_types[ztype] = dropped_types.get(ztype, 0) + 1
             continue
         number = _clean_number(address)
         contact = contacts.get(normalize_number(number), "")
@@ -186,6 +221,14 @@ def parse(
                 originated=int(zorig or 0),
                 answered=bool(zans),
             )
+        )
+    if not calls and dropped_types:
+        kinds = {8: "FaceTime video", 16: "FaceTime audio", 0: "third-party app"}
+        detail = ", ".join(f"{n} {kinds.get(t, f'type {t}')}" for t, n in sorted(dropped_types.items()))
+        raise NoCallRecords(
+            f"All {sum(dropped_types.values())} records were filtered out ({detail}) and none are "
+            "cellular phone calls. Re-run including those types: add --facetime and/or "
+            "--include-app-calls (CLI), or the matching checkboxes in the app."
         )
     calls.sort(key=lambda c: c.timestamp)
     return calls

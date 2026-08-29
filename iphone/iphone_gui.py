@@ -32,13 +32,29 @@ sys.path.insert(0, os.path.join(BASE, os.pardir, "analysis"))
 
 os.environ.setdefault("MPLBACKEND", "Agg")
 
-from profile import DEFAULT_PATH as PROFILE_PATH, HarassmentType, Profile  # noqa: E402
+from profile import HarassmentType, Profile  # noqa: E402
 import backup_locator as bl  # noqa: E402
 import callhistory_parser as chp  # noqa: E402
 from callhistory_parser import IPHONE_SOURCE_NOTE  # noqa: E402
 
-CSV_PATH = "iphone_calls.csv"
-OUT_DIR = "iphone_packet"
+
+def _workdir() -> str:
+    """A stable, findable place for outputs — the exe's cwd is unpredictable when
+    it's double-clicked (Windows may run it from a scoped temp dir)."""
+    for cand in (os.path.join(os.path.expanduser("~"), "Documents", "TraceWorthy"),
+                 os.path.join(os.path.expanduser("~"), "TraceWorthy")):
+        try:
+            os.makedirs(cand, exist_ok=True)
+            return cand
+        except OSError:
+            continue
+    return os.getcwd()
+
+
+WORKDIR = _workdir()
+CSV_PATH = os.path.join(WORKDIR, "iphone_calls.csv")
+OUT_DIR = os.path.join(WORKDIR, "iphone_packet")
+PROFILE_PATH = os.path.join(WORKDIR, "traceworthy_profile.json")
 
 STATES = ["", "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "DC", "FL", "GA", "HI", "ID", "IL",
           "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV",
@@ -81,8 +97,9 @@ class App(tk.Tk):
         self.log = tk.Text(self, height=11, wrap="word", bg="#111", fg="#eee",
                            insertbackground="#eee")
         self.log.pack(fill="both", expand=False, padx=10, pady=(0, 10))
-        self._log("Ready. Step 1: make a local backup of the iPhone with the Apple Devices "
-                  "app / iTunes / Finder, then click Refresh.\n")
+        self._log("Ready. Step 1: make an ENCRYPTED local backup of the iPhone, then click "
+                  "Refresh.\n")
+        self._log(f"Output folder: {WORKDIR}\n")
 
         self.refresh_backups()
         self.load_profile(initial=True)
@@ -140,9 +157,14 @@ class App(tk.Tk):
         self.facetime_var = tk.BooleanVar(value=False)
         ttk.Checkbutton(f, text="Also include FaceTime calls (default: cellular calls only)",
                         variable=self.facetime_var).pack(anchor="w", **pad)
+        self.appcalls_var = tk.BooleanVar(value=False)
+        ttk.Checkbutton(f, text="Also include third-party app calls (WhatsApp, etc.)",
+                        variable=self.appcalls_var).pack(anchor="w", **pad)
 
         ttk.Button(f, text="Extract call history  ➜  iphone_calls.csv",
                    command=self.extract).pack(fill="x", **pad)
+        ttk.Button(f, text="Inspect backup  (diagnose \"No calls found\")",
+                   command=self.inspect_backup).pack(fill="x", **pad)
         ttk.Label(f, text=IPHONE_SOURCE_NOTE, wraplength=760, foreground="#666").pack(anchor="w", **pad)
 
     def _on_backup_pick(self):
@@ -200,20 +222,47 @@ class App(tk.Tk):
             return
         pw = self.pw_var.get() if b.encrypted else None
         facetime = self.facetime_var.get()
+        appcalls = self.appcalls_var.get()
 
         def work():
             import tempfile
             workdir = tempfile.mkdtemp(prefix="tw_iphone_")
             storedata = bl.extract_call_history(b, os.path.join(workdir, "ch.storedata"), pw)
             ab = bl.extract_address_book(b, os.path.join(workdir, "ab.sqlitedb"), pw)
-            calls = chp.parse(storedata, ab, include_facetime=facetime)
+            try:
+                calls = chp.parse(storedata, ab, include_facetime=facetime,
+                                  include_app_calls=appcalls)
+            except chp.NoCallRecords as e:
+                print(str(e))
+                print("\nRun 'Inspect backup' (below) for a full breakdown of what the DB contains.")
+                return
             chp.write_csv(calls, CSV_PATH)
             flagged = sum(1 for c in calls if c.suspicious())
-            print(f"{len(calls)} calls ({flagged} flagged) written to {os.path.abspath(CSV_PATH)}")
-            if not calls:
-                print("No calls found. The iPhone may not have call history synced to this backup.")
+            print(f"{len(calls)} calls ({flagged} flagged) written to {CSV_PATH}")
 
         self._run(work, f"Extracting call history from: {b.label()}")
+
+    def inspect_backup(self):
+        b = self._selected_backup()
+        if not b:
+            messagebox.showwarning("No backup", "Pick a backup first.")
+            return
+        pw = self.pw_var.get() if b.encrypted else None
+
+        def work():
+            import contextlib
+            import io
+            import tempfile
+            from types import SimpleNamespace
+            from cli import cmd_inspect
+            workdir = tempfile.mkdtemp(prefix="tw_iphone_")
+            storedata = bl.extract_call_history(b, os.path.join(workdir, "ch.storedata"), pw)
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf):
+                cmd_inspect(SimpleNamespace(storedata=storedata, backup=None, password=None))
+            print(buf.getvalue())
+
+        self._run(work, f"Inspecting: {b.label()}")
 
     # --------------------------------------------------------------- Notes --
     def _build_notes_tab(self):

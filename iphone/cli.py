@@ -69,6 +69,51 @@ def cmd_extract(args):
     print(f"Extracted call history -> {os.path.abspath(args.out)}")
 
 
+def cmd_inspect(args):
+    """Dump what's actually inside the backup's call-history DB — no phone numbers,
+    just table names, row counts, and column-value distributions. For diagnosing
+    'No calls found'."""
+    import sqlite3
+
+    if args.storedata:
+        storedata = args.storedata
+    else:
+        backup = _resolve_backup(args.backup)
+        try:
+            storedata, _ = _extract_dbs(backup, args.password, tempfile.mkdtemp(prefix="tw_iphone_"))
+        except BackupError as e:
+            sys.exit(str(e))
+
+    print(f"File: {storedata}  ({os.path.getsize(storedata):,} bytes)")
+    con = sqlite3.connect(f"file:{storedata}?mode=ro", uri=True)
+    tables = [r[0] for r in con.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")]
+    print(f"Tables: {tables}")
+
+    for t in tables:
+        if not (t.upper().startswith("ZCALL") or "CALL" in t.upper()):
+            continue
+        n = con.execute(f"SELECT COUNT(*) FROM '{t}'").fetchone()[0]
+        cols = [r[1] for r in con.execute(f"PRAGMA table_info('{t}')")]
+        print(f"\n[{t}]  rows={n}")
+        print(f"  columns: {cols}")
+        if n == 0:
+            continue
+        for col in ("ZCALLTYPE", "ZORIGINATED", "ZANSWERED", "ZSERVICE_PROVIDER", "ZCALL_CATEGORY"):
+            if col in cols:
+                dist = con.execute(
+                    f"SELECT {col}, COUNT(*) FROM '{t}' GROUP BY {col} ORDER BY 2 DESC"
+                ).fetchall()
+                print(f"  {col}: {dist}")
+        if "ZDATE" in cols:
+            lo, hi = con.execute(f"SELECT MIN(ZDATE), MAX(ZDATE) FROM '{t}'").fetchone()
+            print(f"  ZDATE range: {chp._cocoa_to_local(lo)}  ..  {chp._cocoa_to_local(hi)}")
+        if "ZADDRESS" in cols:
+            samples = con.execute(f"SELECT ZADDRESS, typeof(ZADDRESS) FROM '{t}' LIMIT 3").fetchall()
+            masked = [(f"...{chp._clean_number(a)[-4:]}", ty) for a, ty in samples]
+            print(f"  ZADDRESS samples (masked): {masked}")
+    con.close()
+
+
 def cmd_csv(args):
     if args.storedata:
         storedata, ab = args.storedata, args.addressbook
@@ -79,7 +124,11 @@ def cmd_csv(args):
         except BackupError as e:
             sys.exit(str(e))
 
-    calls = chp.parse(storedata, ab, include_facetime=args.facetime)
+    try:
+        calls = chp.parse(storedata, ab, include_facetime=args.facetime,
+                          include_app_calls=args.include_app_calls)
+    except chp.NoCallRecords as e:
+        sys.exit(str(e))
     chp.write_csv(calls, args.out)
     flagged = sum(1 for c in calls if c.suspicious())
     print(f"{len(calls)} calls ({flagged} flagged) -> {os.path.abspath(args.out)}")
@@ -119,6 +168,8 @@ def build_parser() -> argparse.ArgumentParser:
     c.add_argument("--storedata", help="Parse this file directly instead of a backup")
     c.add_argument("--addressbook", help="AddressBook.sqlitedb for better contact matching")
     c.add_argument("--facetime", action="store_true", help="Include FaceTime calls (default: cellular only)")
+    c.add_argument("--include-app-calls", action="store_true",
+                   help="Include third-party VoIP app calls (WhatsApp, etc.)")
     c.add_argument("--out", default="iphone_calls.csv")
     c.set_defaults(func=cmd_csv)
 
@@ -127,6 +178,12 @@ def build_parser() -> argparse.ArgumentParser:
     k.add_argument("--profile", help="traceworthy_profile.json")
     k.add_argument("--out", default="out")
     k.set_defaults(func=cmd_packet)
+
+    n = sub.add_parser("inspect", help="Diagnose 'No calls found' — dump DB structure, no phone numbers")
+    n.add_argument("--backup", default="auto")
+    n.add_argument("--password")
+    n.add_argument("--storedata", help="Inspect this file directly instead of a backup")
+    n.set_defaults(func=cmd_inspect)
     return p
 
 
