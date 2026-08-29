@@ -2,67 +2,101 @@
 
 iOS gives apps **zero** access to the call log, so there is no iPhone app. But an
 iPhone's call history *is* reachable from a computer through a **local backup**.
-This tool reads that backup, pulls the call history out, and builds the same
-evidence packet the Android app produces — FCC complaint, police report cover
-note, carrier call script, incident timeline, evidence summary, and a bundled PDF.
+This tool reads that backup, pulls the call history out into `iphone_calls.csv`
+(the "iPhone log file"), and builds the same evidence packet the Android app
+produces — FCC complaint, police report cover note, carrier call script, incident
+timeline, evidence summary, and a bundled PDF.
 
 Everything runs **on your computer**. Nothing is uploaded anywhere.
 
 ---
 
-## 1. Make a local backup — it must be ENCRYPTED
+## Step by step — from the iPhone to `iphone_calls.csv`
 
-iOS only writes call history into **encrypted** backups. An unencrypted backup
-will not contain it.
+### Step 1 — Get the tool
 
-**Windows** (Apple Devices app, or iTunes):
-1. Connect the iPhone, open the Apple Devices app (or iTunes) and select the phone.
-2. Choose **This computer** / **Local backup**.
-3. Tick **Encrypt local backup** and set a password *you will remember*
-   (there is no recovery — losing it means re-doing the backup).
-4. Click **Back Up Now**.
+Download **`TraceWorthy-iPhone.exe`** from the
+[latest release](https://github.com/jdstigma/TraceWorthy/releases/latest)
+(Windows, self-contained — no Python needed).
 
-**Mac** (Finder): select the iPhone in the sidebar → **Back up all of the data on
-your iPhone to this Mac** → tick **Encrypt local backup** → **Back Up Now**.
-
-## 2. One-time setup (running from source)
+Or run from source:
 
 ```bash
 pip install -r requirements.txt
+python iphone_gui.py
 ```
 
-The compiled `TraceWorthy-iPhone.exe` already contains everything.
+### Step 2 — Make an **encrypted** local backup of the iPhone
 
-## 3. Run it
+iOS only writes call history into **encrypted** backups. An unencrypted backup
+will **not** contain it — the tool will tell you if it's missing.
 
-**GUI:** `python iphone_gui.py` (or double-click `TraceWorthy-iPhone.exe`).
+**Windows** (Apple Devices app, or iTunes):
 
-- **Backup tab** — pick the backup (auto-detected), enter the backup password,
-  click *Extract call history*. Writes `iphone_calls.csv`.
-- **Notes tab** — optional. Select a call, add a note ("silent 30s", "shouted
-  threats") and a severity (Silent / Spoken / Threatening), *Apply*, then *Save all
-  to CSV*. These feed the incident-timeline document.
-- **My info tab** — your name, number, carrier, case numbers. Saved to
-  `traceworthy_profile.json`. Blank fields show as `[PLACEHOLDER]` in the documents.
-- **Generate tab** — *Build full evidence packet* → PDFs in `iphone_packet/`.
+1. Connect the iPhone with a cable. Open the **Apple Devices** app (or iTunes) and
+   click the phone.
+2. Under *Backups*, choose **Back up to this computer** / **This computer**.
+3. Tick **Encrypt local backup**. Set a password *you will remember* — there is no
+   recovery, and losing it means starting over. Write it down.
+4. Click **Back Up Now**. Wait for it to finish (first encrypted backup can take a
+   while — it re-encrypts everything).
 
-**Command line:**
+**Mac** (Finder): select the iPhone in the sidebar → **Back up all of the data on
+your iPhone to this Mac** → tick **Encrypt local backup** → set a password →
+**Back Up Now**.
+
+> Already have an *unencrypted* backup? Turning on encryption and backing up again
+> replaces it. That's expected.
+
+### Step 3 — Extract the call history
+
+**GUI** — open `TraceWorthy-iPhone.exe`, **Backup** tab:
+
+1. The most recent backup is picked automatically (use **Refresh** / **Browse…**
+   otherwise). Backups marked `[encrypted]` are the ones that will work.
+2. Type the **backup password** from Step 2.
+3. Leave *"include FaceTime calls"* unticked unless you need them.
+4. Click **Extract call history**. This writes **`iphone_calls.csv`** next to the
+   program and prints how many calls (and how many flagged) it found.
+
+**Command line** equivalent:
 
 ```bash
-python -m iphone.cli list                       # show local backups
+python -m iphone.cli list                                   # confirm the backup is found
 python -m iphone.cli csv --backup auto --password "YOUR-BACKUP-PASSWORD"
+```
+
+That's the iPhone log file done. `iphone_calls.csv` is byte-compatible with the
+Android app's export, so `../analysis/analyze_calls.py` also reads it directly.
+
+### Step 4 *(optional)* — Add notes to specific calls
+
+**Notes** tab: pick a call, write what happened ("silent 30s", "shouted threats",
+"said he knew my address"), choose a severity (Silent / Spoken / Threatening),
+**Apply**, then **Save all to CSV**. These become the incident-timeline document.
+
+### Step 5 — Fill in your details and build the packet
+
+1. **My info** tab — your name, cell number, city/state, carrier, and any FCC /
+   police / carrier case numbers. **Save** (stored in `traceworthy_profile.json`).
+   Anything left blank shows as `[PLACEHOLDER]` in the documents.
+2. **Generate** tab — **Build full evidence packet**. PDFs land in `iphone_packet/`.
+
+Command line:
+
+```bash
 python -m iphone.cli packet --csv iphone_calls.csv --profile traceworthy_profile.json --out iphone_packet
 ```
 
-## What you get
+---
 
-`iphone_calls.csv` is byte-compatible with the Android app's export, so
-`../analysis/analyze_calls.py` reads it too. The packet contains:
+## What you get
 
 | File | Purpose |
 |---|---|
+| `iphone_calls.csv` | The extracted call log (same format as the Android app's export) |
 | `TraceWorthy_evidence_summary_*.pdf` | One-page stats + charts to attach to any filing |
-| `TraceWorthy_incident_timeline_*.pdf` | Chronological log (from notes added in the Notes tab) |
+| `TraceWorthy_incident_timeline_*.pdf` | Chronological log (from the notes added in Step 4) |
 | `TraceWorthy_police_report_*.pdf` | Cover note for police so they can subpoena the carrier |
 | `TraceWorthy_fcc_complaint_*.pdf` | Text to paste into consumercomplaints.fcc.gov |
 | `TraceWorthy_carrier_script_*.pdf` | Word-for-word script for your carrier's fraud desk |
@@ -77,3 +111,12 @@ python -m iphone.cli packet --csv iphone_calls.csv --profile traceworthy_profile
 - **Cellular only by default.** FaceTime calls are excluded unless you ask for them.
 - **No unmasking.** Like the app, this documents calls; it cannot reveal who is
   really behind a spoofed number. Only a carrier traceback / police subpoena can.
+
+## Troubleshooting
+
+| Message | Fix |
+|---|---|
+| "Call history is not in this backup" | The backup is unencrypted. Redo Step 2 with **Encrypt local backup** ticked. |
+| "Wrong backup password" | Use the password set when encryption was turned on — not the iPhone passcode or Apple ID. |
+| "No iPhone backups found" | Make a backup first, then **Refresh**. Or **Browse…** to the folder that contains `Manifest.plist`. |
+| Encrypted backup, no password saved anywhere | Apple can't recover it. Turn encryption off and back on in the backup app to set a new one, then back up again. |
