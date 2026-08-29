@@ -1,0 +1,7 @@
+# iPhone route — extract call history from a local backup and build the packet.
+pandas
+matplotlib
+fpdf2
+# Encrypted backups only (the unencrypted path uses the standard library):
+iphone-backup-decrypt
+pycryptodome

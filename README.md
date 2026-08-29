@@ -39,7 +39,8 @@ no accounts and no data leaving the device.
 | Component | Folder | What it does |
 |-----------|--------|--------------|
 | **Android app** | `android/` | The main product. Left-drawer navigation; reads the device call log, flags the silent-stranger pattern, per-call notes, charts, CSV export, on-device PDF document generation, in-app knowledge base, and per-state reporting contacts. Open this folder in Android Studio. |
-| **Analysis pipeline** | `analysis/` | `analyze_calls.py` turns any call CSV (app export **or** carrier records, any carrier) into charts + a one-page PDF report. |
+| **Analysis pipeline** | `analysis/` | `analyze_calls.py` turns any call CSV (app export **or** carrier records, any carrier) into charts + a one-page PDF. `packet.py` builds the full multi-document evidence packet from any CSV — the same documents the app generates on-device. |
+| **iPhone route** | `iphone/` | iOS blocks call-log access, so there is no iPhone app. This PC tool reads an **encrypted iPhone backup**, extracts the call history, and builds the full evidence packet. GUI + CLI; ships as `TraceWorthy-iPhone.exe`. |
 | **Google Voice route** | `google_voice/` | Free screening number; `gvoice_to_csv.py` converts a Takeout export into the CSV the pipeline reads. |
 | **Twilio route** *(optional, ~$1/mo)* | `twilio/` | Logs each call's **STIR/SHAKEN attestation**. |
 | **Desktop control panel** | `traceworthy_launcher.py` | Tabbed GUI (Run + Help). Build to `.exe` with `build_exe.bat`. |
@@ -47,9 +48,11 @@ no accounts and no data leaving the device.
 ## Data flow
 
 ```
-Android app ─┐
-Carrier CSV ─┼─►  analyze_calls.py  ─►  charts + TraceWorthy_summary.pdf
-Google Voice ┘
+Android app ──────┐
+Carrier CSV ──────┼─►  analyze_calls.py  ─►  charts + TraceWorthy_summary.pdf
+Google Voice ─────┤
+iPhone backup ─┐  └─►  packet.py        ─►  full evidence packet (FCC / police /
+   iphone/ ────┘                            carrier / timeline / summary + bundle)
 ```
 
 ## Reference templates (project root)
@@ -67,6 +70,10 @@ covers first-time setup). Min SDK 29, package `com.traceworthy.app`.
 
 **Analysis (PC):** `pip install pandas matplotlib`, then double-click
 **`TraceWorthy Control Panel.bat`** — or `python analysis/analyze_calls.py --csv <file>`.
+Full packet from a CSV: `python analysis/packet.py --csv <file> --profile traceworthy_profile.json`.
+
+**iPhone (PC):** make an **encrypted** local backup, then run `iphone/iphone_gui.py`
+(or `TraceWorthy-iPhone.exe`). See [`iphone/README.md`](iphone/README.md).
 
 **Build artifacts:** `BUILD_DISTRIBUTABLES.md` covers the APK, the `.exe`, and CI;
 `SIGNING.md` covers signed release builds.

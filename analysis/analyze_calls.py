@@ -174,7 +174,7 @@ def load_carrier(df: pd.DataFrame, days, overrides) -> pd.DataFrame:
     if days:
         out = out[out["Timestamp"] >= datetime.now() - timedelta(days=days)]
 
-    print(f"  Detected carrier format → number='{number_col}', "
+    print(f"  Detected carrier format -> number='{number_col}', "
           f"time='{datetime_col or f'{date_col}+{time_col}'}', "
           f"duration='{duration_col}', direction='{direction_col}'")
     return out

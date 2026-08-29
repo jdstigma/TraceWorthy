@@ -30,6 +30,31 @@ jobs:
           name: TraceWorthy-exe
           path: dist/TraceWorthy.exe
 
+  iphone-exe:
+    name: Build iPhone-tool Windows .exe
+    if: github.event_name != 'release'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: pip install pyinstaller -r iphone/requirements.txt
+      - name: Build TraceWorthy-iPhone.exe
+        working-directory: iphone
+        run: >
+          pyinstaller --onefile --windowed --name TraceWorthy-iPhone
+          --paths . --paths ../analysis
+          --hidden-import analyze_calls --hidden-import stats --hidden-import packet
+          --hidden-import backup_locator --hidden-import callhistory_parser --hidden-import profile
+          --collect-all pandas --collect-all matplotlib --collect-all fpdf
+          --collect-submodules iphone_backup_decrypt --collect-all Crypto
+          iphone_gui.py
+      - uses: actions/upload-artifact@v7
+        with:
+          name: TraceWorthy-iPhone-exe
+          path: iphone/dist/TraceWorthy-iPhone.exe
+
   apk:
     name: Build Android debug APK
     if: github.event_name != 'release'
@@ -76,6 +101,36 @@ jobs:
         run: >
           gh release upload "${{ github.event.release.tag_name }}"
           dist/TraceWorthy.exe
+          --repo ${{ github.repository }} --clobber
+
+  release-iphone-exe:
+    name: Build & attach iPhone-tool .exe
+    if: github.event_name == 'release'
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: pip install pyinstaller -r iphone/requirements.txt
+      - name: Build TraceWorthy-iPhone.exe
+        working-directory: iphone
+        run: >
+          pyinstaller --onefile --windowed --name TraceWorthy-iPhone
+          --paths . --paths ../analysis
+          --hidden-import analyze_calls --hidden-import stats --hidden-import packet
+          --hidden-import backup_locator --hidden-import callhistory_parser --hidden-import profile
+          --collect-all pandas --collect-all matplotlib --collect-all fpdf
+          --collect-submodules iphone_backup_decrypt --collect-all Crypto
+          iphone_gui.py
+      - name: Attach exe to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >
+          gh release upload "${{ github.event.release.tag_name }}"
+          iphone/dist/TraceWorthy-iPhone.exe
           --repo ${{ github.repository }} --clobber
 
   release-apk:

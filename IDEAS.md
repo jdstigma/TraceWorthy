@@ -30,7 +30,13 @@ are in the Done section below.
 
 ## Approved / in progress
 
-_(moved here when we pick them up)_
+- 🔨 **iPhone route (`iphone/`)** — PC tool: read an encrypted iPhone backup →
+  extract `CallHistory.storedata` → app-format CSV → full evidence packet. New
+  `analysis/stats.py` + `analysis/packet.py` (Python port of `DocumentGenerator.kt`,
+  rendered with fpdf2) also give carrier-CSV users the full packet. GUI + CLI,
+  `TraceWorthy-iPhone.exe` via CI. _(pending release)_
+  Follow-ups: scatter chart in the PC packet; post-import note/severity editing to
+  feed the incident timeline; "build packet" button in the main launcher.
 
 ---
 

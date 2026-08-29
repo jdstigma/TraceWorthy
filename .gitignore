@@ -15,6 +15,13 @@ twilio_recordings.csv
 *.mp3
 *.wav
 *.m4a
+# iPhone route — extracted device databases, personal profile, generated packets
+*.storedata
+*.sqlitedb
+iphone_calls*.csv
+traceworthy_profile.json
+iphone_packet/
+**/MobileSync/
 
 # =========================================================================
 #  Python
