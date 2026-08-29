@@ -11,8 +11,11 @@ App CSV header (see android/.../CsvExporter.kt):
 from __future__ import annotations
 
 import csv
+import os
 import re
+import shutil
 import sqlite3
+import tempfile
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
@@ -141,6 +144,25 @@ def _table_columns(con: sqlite3.Connection, table: str) -> set[str]:
     return {r[1] for r in con.execute(f"PRAGMA table_info({table})")}
 
 
+def connect(storedata_path: str) -> sqlite3.Connection:
+    """Open the call-history DB for reading. If a non-empty -wal sidecar is next to
+    it, copy the DB + sidecars somewhere writable and open read-write so SQLite
+    replays the WAL — recent calls are usually only in there."""
+    wal = storedata_path + "-wal"
+    if os.path.isfile(wal) and os.path.getsize(wal) > 0:
+        tmp = tempfile.mkdtemp(prefix="tw_wal_")
+        base = os.path.join(tmp, "CallHistory.storedata")
+        shutil.copyfile(storedata_path, base)
+        for suffix in ("-wal", "-shm"):
+            src = storedata_path + suffix
+            if os.path.isfile(src):
+                shutil.copyfile(src, base + suffix)
+        con = sqlite3.connect(base)
+        con.execute("PRAGMA wal_checkpoint(TRUNCATE)")  # fold the WAL into the main file
+        return con
+    return sqlite3.connect(f"file:{storedata_path}?mode=ro", uri=True)
+
+
 class NoCallRecords(ValueError):
     """The call-history table exists but holds no rows (call history likely lives in iCloud)."""
 
@@ -166,7 +188,7 @@ def parse(
     include_app_calls: bool = False,
     flag_threshold_seconds: int = DEFAULT_FLAG_THRESHOLD_SECONDS,
 ) -> list[Call]:
-    con = sqlite3.connect(f"file:{storedata_path}?mode=ro", uri=True)
+    con = connect(storedata_path)
     try:
         table = _call_table(con)
         cols = _table_columns(con, table)

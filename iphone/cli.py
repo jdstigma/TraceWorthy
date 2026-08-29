@@ -73,8 +73,6 @@ def cmd_inspect(args):
     """Dump what's actually inside the backup's call-history DB — no phone numbers,
     just table names, row counts, and column-value distributions. For diagnosing
     'No calls found'."""
-    import sqlite3
-
     if args.storedata:
         storedata = args.storedata
     else:
@@ -85,7 +83,12 @@ def cmd_inspect(args):
             sys.exit(str(e))
 
     print(f"File: {storedata}  ({os.path.getsize(storedata):,} bytes)")
-    con = sqlite3.connect(f"file:{storedata}?mode=ro", uri=True)
+    for suffix in ("-wal", "-shm"):
+        side = storedata + suffix
+        if os.path.isfile(side):
+            print(f"  sidecar {os.path.basename(side)}: {os.path.getsize(side):,} bytes "
+                  "(un-checkpointed writes — will be replayed)")
+    con = chp.connect(storedata)
     tables = [r[0] for r in con.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")]
     print(f"Tables: {tables}")
 

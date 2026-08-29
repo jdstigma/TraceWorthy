@@ -215,7 +215,17 @@ def backup_has_call_history(backup: Backup | str) -> bool | None:
 
 
 def extract_call_history(backup: Backup | str, out_path: str, password: str | None = None) -> str:
-    return extract_file(backup, CALL_HISTORY, out_path, password)
+    """Extract CallHistory.storedata, plus its -wal / -shm sidecars if present, into
+    the same folder so SQLite replays any un-checkpointed writes (recent calls often
+    live only in the WAL)."""
+    extract_file(backup, CALL_HISTORY, out_path, password)
+    domain, main_rel = CALL_HISTORY
+    for suffix in ("-wal", "-shm"):
+        try:
+            extract_file(backup, (domain, main_rel + suffix), out_path + suffix, password)
+        except BackupError:
+            pass  # sidecar not in the backup — normal when the DB was checkpointed
+    return out_path
 
 
 def extract_address_book(backup: Backup | str, out_path: str, password: str | None = None) -> str | None:
