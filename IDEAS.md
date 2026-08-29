@@ -30,18 +30,20 @@ are in the Done section below.
 
 ## Approved / in progress
 
-- 🔨 **iPhone route (`iphone/`)** — PC tool: read an encrypted iPhone backup →
-  extract `CallHistory.storedata` → app-format CSV → full evidence packet. New
-  `analysis/stats.py` + `analysis/packet.py` (Python port of `DocumentGenerator.kt`,
-  rendered with fpdf2) also give carrier-CSV users the full packet. GUI + CLI,
-  `TraceWorthy-iPhone.exe` via CI. Fast-follows all done: calls-over-time scatter in
-  the PC packet + `analyze_calls.py`; Notes tab in the iPhone GUI (per-call
-  note/severity → incident timeline); "full evidence packet" button in the main
-  `traceworthy_launcher.py`. _(pending release)_
+_(moved here when we pick them up)_
 
 ---
 
 ## Done
+
+- **iPhone route (`iphone/`)** — PC tool: read an encrypted iPhone backup →
+  extract `CallHistory.storedata` → app-format CSV → full evidence packet. New
+  `analysis/stats.py` + `analysis/packet.py` (Python port of `DocumentGenerator.kt`,
+  rendered with fpdf2) also give carrier / Google Voice / app-export users the full
+  packet. GUI (Backup / Notes / My info / Generate) + CLI, `TraceWorthy-iPhone.exe`
+  via CI. Includes the calls-over-time scatter, the iPhone GUI Notes tab (per-call
+  note/severity → incident timeline), and a "full evidence packet" button in the
+  main `traceworthy_launcher.py`. — v1.7.0
 
 - Left-drawer navigation + brand theme (v1.1.0)
 - On-device PDF document generation (v1.1.0)
