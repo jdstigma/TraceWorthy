@@ -33,10 +33,12 @@ from stats import CallRow, CallStats, stats_extras  # noqa: E402
 
 try:
     import analyze_calls
-    from analyze_calls import draw_by_hour, draw_calls_per_day, draw_pie, draw_top_offenders
+    from analyze_calls import (
+        draw_by_hour, draw_calls_over_time, draw_calls_per_day, draw_pie, draw_top_offenders,
+    )
 except ImportError:  # pragma: no cover - analyze_calls sits next to this file
     analyze_calls = None
-    draw_by_hour = draw_calls_per_day = draw_pie = draw_top_offenders = None
+    draw_by_hour = draw_calls_over_time = draw_calls_per_day = draw_pie = draw_top_offenders = None
 
 NAVY = (0x0F, 0x1E, 0x33)
 RED = (0xB0, 0x00, 0x20)
@@ -92,6 +94,12 @@ class ChartBar:
 @dataclass
 class BarChart:
     bars: list[ChartBar]
+
+
+@dataclass
+class Scatter:
+    """Calls-over-time scatter (date x time of day), last 90 days, dots by top-5 numbers."""
+    days: int = 90
 
 
 @dataclass
@@ -476,6 +484,14 @@ def _evidence_summary(profile, stats, rows, source_note=None) -> list:
         nm = n.name or n.number
         flag = f" - {n.flagged_count} flagged" if n.flagged_count > 0 else ""
         blocks.append(Bullet(f"{nm}: {n.total_count} calls{flag}"))
+    blocks += [
+        Heading("Calls Over Time - Last 90 Days (Date x Time Of Day)"),
+        Scatter(),
+        Body("Each dot is a call - the horizontal position is the date and the vertical position "
+             "is the time of day. Dots are colored by the top-5 most-called numbers; other numbers "
+             "are gray. This shows when calls arrive, including overnight clustering or bursts on "
+             "particular dates."),
+    ]
     blocks += _flagged_number_section(rows)
     blocks.append(Gap(10))
     blocks.append(Body("This summary is generated from the call log. A full per-call CSV accompanies it."))
@@ -536,6 +552,7 @@ def _chart_png(kind: str, rows: list[CallRow], path: str) -> str | None:
         "top": (draw_top_offenders, (9, 4.5)),
         "hour": (draw_by_hour, (9, 3.5)),
         "day": (draw_calls_per_day, (10, 3.5)),
+        "over": (draw_calls_over_time, (10, 4)),
     }[kind]
     fig, ax = plt.subplots(figsize=figsize, dpi=150)
     try:
@@ -601,6 +618,8 @@ def _render_pdf(blocks: list, out_path: str, rows: list[CallRow]) -> str:
             _embed_chart(pdf, _chart_png("pie", rows, os.path.join(tmpdir, "pie.png")), ensure, 190)
         elif isinstance(block, BarChart):
             _draw_barchart(pdf, block, ensure)
+        elif isinstance(block, Scatter):
+            _embed_chart(pdf, _chart_png("over", rows, os.path.join(tmpdir, "over.png")), ensure, 220)
 
     pdf.output(out_path)
     shutil.rmtree(tmpdir, ignore_errors=True)
@@ -723,7 +742,8 @@ def generate_all(rows: list[CallRow], profile, out_dir: str, source_note: str | 
     written["evidence_packet"] = packet_path
 
     for kind, name in (("pie", "flagged_vs_normal"), ("top", "top_offenders"),
-                       ("hour", "calls_by_hour"), ("day", "calls_per_day")):
+                       ("hour", "calls_by_hour"), ("day", "calls_per_day"),
+                       ("over", "calls_over_time")):
         p = _chart_png(kind, rows, os.path.join(out_dir, f"{name}.png"))
         if p:
             written[f"chart_{name}"] = p

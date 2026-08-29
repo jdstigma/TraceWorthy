@@ -49,6 +49,11 @@ try:
 except Exception as _e:
     gvoice_to_csv = None
     _gvoice_err = str(_e)
+try:
+    import packet
+except Exception as _e:          # fpdf2 not installed, etc.
+    packet = None
+    _packet_err = str(_e)
 
 
 class Launcher(tk.Tk):
@@ -73,9 +78,11 @@ class Launcher(tk.Tk):
                   font=("Segoe UI", 11, "bold")).pack(anchor="w", **pad)
         ttk.Button(self.run_tab, text="1.  Convert Google Voice export  ➜  CSV",
                    command=self.convert_gvoice).pack(fill="x", **pad)
-        ttk.Button(self.run_tab, text="2.  Make charts + PDF from a CSV",
+        ttk.Button(self.run_tab, text="2.  Make charts + one-page PDF from a CSV",
                    command=self.make_charts).pack(fill="x", **pad)
-        ttk.Button(self.run_tab, text="3.  Start Twilio logger  (optional, needs Flask)",
+        ttk.Button(self.run_tab, text="3.  Make full evidence packet from a CSV  (FCC / police / carrier / timeline)",
+                   command=self.make_packet).pack(fill="x", **pad)
+        ttk.Button(self.run_tab, text="4.  Start Twilio logger  (optional, needs Flask)",
                    command=self.start_twilio).pack(fill="x", **pad)
         ttk.Button(self.run_tab, text="Open the results folder (charts + PDF)",
                    command=self.open_results).pack(fill="x", **pad)
@@ -138,6 +145,34 @@ class Launcher(tk.Tk):
             lambda: analyze_calls.analyze(csv_path, None, out, {"duration_unit": "auto"}),
             "Building charts + PDF…")
 
+    def make_packet(self):
+        if packet is None:
+            self._log(f"\n✗ The packet builder needs pandas + matplotlib + fpdf2. "
+                      f"Run:  pip install pandas matplotlib fpdf2\n   ({_packet_err})\n")
+            return
+        csv_path = filedialog.askopenfilename(
+            title="Select a CSV (app export, carrier records, or an iPhone export)",
+            filetypes=[("CSV files", "*.csv"), ("All files", "*.*")])
+        if not csv_path:
+            return
+        profile_path = filedialog.askopenfilename(
+            title="Select traceworthy_profile.json  (Cancel to leave fields as [PLACEHOLDER])",
+            filetypes=[("JSON", "*.json"), ("All files", "*.*")]) or None
+        out = os.path.join(ANALYSIS, "charts")
+
+        def build():
+            rows = packet.rows_from_csv(csv_path)
+            if not rows:
+                print("No usable calls in that CSV.")
+                return
+            prof = packet._JsonProfile.load(profile_path)
+            written = packet.generate_all(rows, prof, out)
+            print(f"{len(rows)} calls  ->  {out}")
+            for name, p in written.items():
+                print(f"  {os.path.basename(p)}")
+
+        self._run_callable(build, "Building full evidence packet…")
+
     def start_twilio(self):
         script = os.path.join(TWILIO, "twilio_call_logger.py")
         if getattr(sys, "frozen", False) or not os.path.exists(script):
@@ -174,12 +209,17 @@ class Launcher(tk.Tk):
             "  Use after downloading your Google Voice data from takeout.google.com.\n"
             "  Unzip it, click this, and select the folder  Takeout\\Voice\\Calls.\n"
             "  Writes google_voice\\gvoice_calls.csv, ready for button 2.\n\n"
-            "Button 2 — Make charts + PDF from a CSV\n"
+            "Button 2 — Make charts + one-page PDF from a CSV\n"
             "  Pick ANY call CSV: the Android app export (TraceWorthy_evidence_*.csv), a\n"
             "  carrier download (AT&T/Verizon/T-Mobile), or gvoice_calls.csv from button 1.\n"
-            "  Auto-detects the format; writes four charts + TraceWorthy_summary.pdf into\n"
+            "  Auto-detects the format; writes five charts + TraceWorthy_summary.pdf into\n"
             "  analysis\\charts. That PDF is your one-page evidence sheet.\n\n"
-            "Button 3 — Start Twilio logger (optional)\n"
+            "Button 3 — Make full evidence packet from a CSV\n"
+            "  Same CSV input as button 2, plus (optional) your traceworthy_profile.json.\n"
+            "  Writes the FCC complaint, police cover note, carrier script, incident\n"
+            "  timeline, evidence summary, and a bundled packet PDF into analysis\\charts —\n"
+            "  the same documents the Android app generates on-device.\n\n"
+            "Button 4 — Start Twilio logger (optional)\n"
             "  Only for the paid Twilio route (STIR/SHAKEN attestation). Not needed for\n"
             "  the free Google Voice route. Runs from the Python source.\n\n"
             "Open the results folder\n"

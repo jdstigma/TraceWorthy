@@ -34,9 +34,10 @@ are in the Done section below.
   extract `CallHistory.storedata` → app-format CSV → full evidence packet. New
   `analysis/stats.py` + `analysis/packet.py` (Python port of `DocumentGenerator.kt`,
   rendered with fpdf2) also give carrier-CSV users the full packet. GUI + CLI,
-  `TraceWorthy-iPhone.exe` via CI. _(pending release)_
-  Follow-ups: scatter chart in the PC packet; post-import note/severity editing to
-  feed the incident timeline; "build packet" button in the main launcher.
+  `TraceWorthy-iPhone.exe` via CI. Fast-follows all done: calls-over-time scatter in
+  the PC packet + `analyze_calls.py`; Notes tab in the iPhone GUI (per-call
+  note/severity → incident timeline); "full evidence packet" button in the main
+  `traceworthy_launcher.py`. _(pending release)_
 
 ---
 

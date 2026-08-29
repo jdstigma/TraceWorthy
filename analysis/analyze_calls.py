@@ -265,6 +265,40 @@ def draw_by_hour(ax, df):
     ax.legend(fontsize=9)
 
 
+# Scatter dot colors for the top-5 numbers (blue, teal, orange, purple, coral) +
+# gray for everything else. Matches the in-app ScatterColors; red is avoided so it
+# never reads as the flagged signal.
+SCATTER_TOP5 = ["#185FA5", "#1FBFA6", "#BA7517", "#7A3EA1", "#FF7A59"]
+SCATTER_OTHER = "#9AA4B2"
+
+
+def draw_calls_over_time(ax, df, days=90):
+    """Scatter: each call as (date, time-of-day), dots colored by the top-5 numbers.
+    Window is the last `days` days up to the most recent call (not today)."""
+    if df.empty:
+        ax.axis("off")
+        return
+    d = df.assign(Timestamp=pd.to_datetime(df["Timestamp"], errors="coerce")).dropna(subset=["Timestamp"])
+    if not d.empty:
+        d = d[d["Timestamp"] >= d["Timestamp"].max() - timedelta(days=days)]
+    if d.empty:
+        ax.axis("off")
+        return
+    top5 = list(d["Number"].value_counts().head(5).index)
+    colors = [SCATTER_TOP5[top5.index(n)] if n in top5 else SCATTER_OTHER for n in d["Number"]]
+    hour_frac = d["Timestamp"].dt.hour + d["Timestamp"].dt.minute / 60.0
+    ax.scatter(d["Timestamp"], hour_frac, c=colors, s=16, alpha=0.85, edgecolors="none")
+    ax.set_ylim(-0.5, 24.5)
+    ax.set_yticks([0, 6, 12, 18, 24])
+    ax.set_yticklabels(["12a", "6a", "12p", "6p", "12a"])
+    ax.set_ylabel("Time of day")
+    ax.set_title(f"Calls over time — last {days} days (dots: top-5 numbers)",
+                 fontsize=13, fontweight="bold")
+    for lbl in ax.get_xticklabels():
+        lbl.set_rotation(45)
+        lbl.set_horizontalalignment("right")
+
+
 # --------------------------------------------------------------------------- #
 #  Output
 # --------------------------------------------------------------------------- #
@@ -328,6 +362,7 @@ def analyze(csv_path, days=None, out="charts", overrides=None):
     save_png(draw_top_offenders, df, out, "top_offenders.png", (9, 5))
     save_png(draw_calls_per_day, df, out, "calls_per_day.png", (11, 5))
     save_png(draw_by_hour, df, out, "calls_by_hour.png", (9, 5))
+    save_png(draw_calls_over_time, df, out, "calls_over_time.png", (11, 5))
     pdf_path = build_pdf(df, out, csv_name, days)
 
     print(f"Charts + PDF written to: {os.path.abspath(out)}")

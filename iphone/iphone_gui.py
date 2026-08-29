@@ -56,17 +56,25 @@ class App(tk.Tk):
 
         self.backups: list[bl.Backup] = []
         self.vars: dict[str, tk.StringVar] = {}
+        self._notes_rows: list[dict] = []
+        self._notes_header: list[str] = []
+        self._notes_sel: str | None = None
 
         nb = ttk.Notebook(self)
         nb.pack(fill="both", expand=True, padx=8, pady=(8, 4))
         self.backup_tab = ttk.Frame(nb)
+        self.notes_tab = ttk.Frame(nb)
         self.info_tab = ttk.Frame(nb)
         self.gen_tab = ttk.Frame(nb)
         nb.add(self.backup_tab, text="1 · Backup")
-        nb.add(self.info_tab, text="2 · My info")
-        nb.add(self.gen_tab, text="3 · Generate")
+        nb.add(self.notes_tab, text="2 · Notes")
+        nb.add(self.info_tab, text="3 · My info")
+        nb.add(self.gen_tab, text="4 · Generate")
+        nb.bind("<<NotebookTabChanged>>", self._on_tab_changed)
+        self._nb = nb
 
         self._build_backup_tab()
+        self._build_notes_tab()
         self._build_info_tab()
         self._build_gen_tab()
 
@@ -206,6 +214,100 @@ class App(tk.Tk):
                 print("No calls found. The iPhone may not have call history synced to this backup.")
 
         self._run(work, f"Extracting call history from: {b.label()}")
+
+    # --------------------------------------------------------------- Notes --
+    def _build_notes_tab(self):
+        f = self.notes_tab
+        top = ttk.Frame(f)
+        top.pack(fill="x", padx=10, pady=(8, 4))
+        ttk.Label(top, text="Add a note + severity to a call. These feed the incident timeline.",
+                  font=("Segoe UI", 10, "bold")).pack(side="left")
+        self.flagged_only = tk.BooleanVar(value=True)
+        ttk.Checkbutton(top, text="Flagged calls only", variable=self.flagged_only,
+                        command=self._reload_notes_tree).pack(side="right")
+        ttk.Button(top, text="Reload CSV", command=self._load_notes_csv).pack(side="right", padx=6)
+
+        cols = ("when", "number", "type", "sev", "note")
+        self.tree = ttk.Treeview(f, columns=cols, show="headings", height=12)
+        for c, w in zip(cols, (130, 130, 70, 90, 300)):
+            self.tree.heading(c, text=c.title())
+            self.tree.column(c, width=w, anchor="w")
+        self.tree.pack(fill="both", expand=True, padx=10, pady=4)
+        self.tree.bind("<<TreeviewSelect>>", self._on_note_select)
+
+        ed = ttk.Frame(f)
+        ed.pack(fill="x", padx=10, pady=6)
+        ttk.Label(ed, text="Severity:").grid(row=0, column=0, sticky="w")
+        self.sev_var = tk.StringVar(value="")
+        ttk.Combobox(ed, textvariable=self.sev_var, width=14, state="readonly",
+                     values=["", "Silent", "Spoken", "Threatening"]).grid(row=0, column=1, sticky="w", padx=6)
+        ttk.Label(ed, text="Note:").grid(row=1, column=0, sticky="nw", pady=(6, 0))
+        self.note_text = tk.Text(ed, height=3, width=70, wrap="word")
+        self.note_text.grid(row=1, column=1, sticky="w", padx=6, pady=(6, 0))
+        btns = ttk.Frame(ed)
+        btns.grid(row=2, column=1, sticky="w", padx=6, pady=6)
+        ttk.Button(btns, text="Apply to selected call", command=self._apply_note).pack(side="left")
+        ttk.Button(btns, text="Save all to CSV", command=self._save_notes_csv).pack(side="left", padx=6)
+
+    def _on_tab_changed(self, _e):
+        if not hasattr(self, "tree"):
+            return
+        if self._nb.index(self._nb.select()) == 1 and not self._notes_rows:
+            self._load_notes_csv()
+
+    def _load_notes_csv(self):
+        import csv
+        if not os.path.isfile(CSV_PATH):
+            self._log("No iphone_calls.csv yet — run Backup → Extract first.\n")
+            return
+        with open(CSV_PATH, newline="", encoding="utf-8") as fh:
+            r = csv.DictReader(fh)
+            self._notes_header = list(r.fieldnames or [])
+            self._notes_rows = list(r)
+        self._reload_notes_tree()
+        self._log(f"Loaded {len(self._notes_rows)} calls into the Notes tab.\n")
+
+    def _reload_notes_tree(self):
+        self.tree.delete(*self.tree.get_children())
+        for i, row in enumerate(self._notes_rows):
+            if self.flagged_only.get() and (row.get("Suspicious", "").upper() != "YES"):
+                continue
+            self.tree.insert("", "end", iid=str(i), values=(
+                row.get("Timestamp", ""), row.get("Number", ""), row.get("Type", ""),
+                row.get("Severity", ""), row.get("Note", "")))
+
+    def _on_note_select(self, _e):
+        sel = self.tree.selection()
+        self._notes_sel = sel[0] if sel else None
+        if self._notes_sel is None:
+            return
+        row = self._notes_rows[int(self._notes_sel)]
+        self.sev_var.set(row.get("Severity", ""))
+        self.note_text.delete("1.0", "end")
+        self.note_text.insert("1.0", row.get("Note", ""))
+
+    def _apply_note(self):
+        if self._notes_sel is None:
+            messagebox.showinfo("Pick a call", "Select a call in the list first.")
+            return
+        row = self._notes_rows[int(self._notes_sel)]
+        row["Severity"] = self.sev_var.get()
+        row["Note"] = self.note_text.get("1.0", "end").strip()
+        self.tree.item(self._notes_sel, values=(
+            row.get("Timestamp", ""), row.get("Number", ""), row.get("Type", ""),
+            row["Severity"], row["Note"]))
+        self._log(f"Note set on {row.get('Number','')} @ {row.get('Timestamp','')}\n")
+
+    def _save_notes_csv(self):
+        import csv
+        if not self._notes_rows:
+            return
+        with open(CSV_PATH, "w", newline="", encoding="utf-8") as fh:
+            w = csv.DictWriter(fh, fieldnames=self._notes_header)
+            w.writeheader()
+            w.writerows(self._notes_rows)
+        n = sum(1 for r in self._notes_rows if r.get("Note") or r.get("Severity"))
+        self._log(f"Saved {os.path.abspath(CSV_PATH)} — {n} call(s) now have a note/severity.\n")
 
     # ------------------------------------------------------------- My info --
     def _build_info_tab(self):

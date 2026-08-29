@@ -39,6 +39,9 @@ The compiled `TraceWorthy-iPhone.exe` already contains everything.
 
 - **Backup tab** — pick the backup (auto-detected), enter the backup password,
   click *Extract call history*. Writes `iphone_calls.csv`.
+- **Notes tab** — optional. Select a call, add a note ("silent 30s", "shouted
+  threats") and a severity (Silent / Spoken / Threatening), *Apply*, then *Save all
+  to CSV*. These feed the incident-timeline document.
 - **My info tab** — your name, number, carrier, case numbers. Saved to
   `traceworthy_profile.json`. Blank fields show as `[PLACEHOLDER]` in the documents.
 - **Generate tab** — *Build full evidence packet* → PDFs in `iphone_packet/`.
@@ -59,7 +62,7 @@ python -m iphone.cli packet --csv iphone_calls.csv --profile traceworthy_profile
 | File | Purpose |
 |---|---|
 | `TraceWorthy_evidence_summary_*.pdf` | One-page stats + charts to attach to any filing |
-| `TraceWorthy_incident_timeline_*.pdf` | Chronological log (needs Note/Severity columns filled) |
+| `TraceWorthy_incident_timeline_*.pdf` | Chronological log (from notes added in the Notes tab) |
 | `TraceWorthy_police_report_*.pdf` | Cover note for police so they can subpoena the carrier |
 | `TraceWorthy_fcc_complaint_*.pdf` | Text to paste into consumercomplaints.fcc.gov |
 | `TraceWorthy_carrier_script_*.pdf` | Word-for-word script for your carrier's fraud desk |
