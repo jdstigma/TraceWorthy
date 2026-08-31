@@ -160,6 +160,9 @@ class App(tk.Tk):
         self.appcalls_var = tk.BooleanVar(value=False)
         ttk.Checkbutton(f, text="Also include third-party app calls (WhatsApp, etc.)",
                         variable=self.appcalls_var).pack(anchor="w", **pad)
+        self.outgoing_var = tk.BooleanVar(value=False)
+        ttk.Checkbutton(f, text="Also include calls you placed (default: incoming only)",
+                        variable=self.outgoing_var).pack(anchor="w", **pad)
 
         ttk.Button(f, text="Extract call history  ➜  iphone_calls.csv",
                    command=self.extract).pack(fill="x", **pad)
@@ -223,6 +226,7 @@ class App(tk.Tk):
         pw = self.pw_var.get() if b.encrypted else None
         facetime = self.facetime_var.get()
         appcalls = self.appcalls_var.get()
+        outgoing = self.outgoing_var.get()
 
         def work():
             import tempfile
@@ -231,7 +235,7 @@ class App(tk.Tk):
             ab = bl.extract_address_book(b, os.path.join(workdir, "ab.sqlitedb"), pw)
             try:
                 calls = chp.parse(storedata, ab, include_facetime=facetime,
-                                  include_app_calls=appcalls)
+                                  include_app_calls=appcalls, include_outgoing=outgoing)
             except chp.NoCallRecords as e:
                 print(str(e))
                 print("\nRun 'Inspect backup' (below) for a full breakdown of what the DB contains.")

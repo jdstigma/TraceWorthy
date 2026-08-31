@@ -186,6 +186,7 @@ def parse(
     *,
     include_facetime: bool = False,
     include_app_calls: bool = False,
+    include_outgoing: bool = False,
     flag_threshold_seconds: int = DEFAULT_FLAG_THRESHOLD_SECONDS,
 ) -> list[Call]:
     con = connect(storedata_path)
@@ -219,8 +220,14 @@ def parse(
     contacts = load_contact_index(addressbook_path)
     calls: list[Call] = []
     dropped_types: dict[int, int] = {}
+    dropped_outgoing = 0
     for address, zdate, zdur, ztype, zorig, zans, zname in rows:
         ztype = int(ztype) if ztype is not None else CALLTYPE_PHONE
+        # Inbound-only, matching the Android app: harassment is always an incoming
+        # call, and the victim's own outgoing calls are noise in an evidence packet.
+        if not include_outgoing and int(zorig or 0) == 1:
+            dropped_outgoing += 1
+            continue
         keep = True
         if ztype in FACETIME_TYPES:
             keep = include_facetime
@@ -244,13 +251,16 @@ def parse(
                 answered=bool(zans),
             )
         )
-    if not calls and dropped_types:
+    if not calls and (dropped_types or dropped_outgoing):
         kinds = {8: "FaceTime video", 16: "FaceTime audio", 0: "third-party app"}
-        detail = ", ".join(f"{n} {kinds.get(t, f'type {t}')}" for t, n in sorted(dropped_types.items()))
+        parts = [f"{n} {kinds.get(t, f'type {t}')}" for t, n in sorted(dropped_types.items())]
+        if dropped_outgoing:
+            parts.append(f"{dropped_outgoing} outgoing")
+        total = sum(dropped_types.values()) + dropped_outgoing
         raise NoCallRecords(
-            f"All {sum(dropped_types.values())} records were filtered out ({detail}) and none are "
-            "cellular phone calls. Re-run including those types: add --facetime and/or "
-            "--include-app-calls (CLI), or the matching checkboxes in the app."
+            f"All {total} records were filtered out ({', '.join(parts)}) and none are incoming "
+            "cellular phone calls. Re-run including those types: add --facetime, --include-app-calls, "
+            "and/or --include-outgoing (CLI), or the matching checkboxes in the app."
         )
     calls.sort(key=lambda c: c.timestamp)
     return calls

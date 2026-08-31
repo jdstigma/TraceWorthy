@@ -824,8 +824,17 @@ def _embed_chart(pdf: FPDF, path: str | None, ensure, height: float):
 # --------------------------------------------------------------------------- #
 #  Public entry point
 # --------------------------------------------------------------------------- #
-def rows_from_csv(csv_path: str) -> list[CallRow]:
-    """Load a TraceWorthy app export or any carrier CSV into CallRow objects."""
+def rows_from_csv(csv_path: str, include_outgoing: bool = False) -> list[CallRow]:
+    """Load a TraceWorthy app export or any carrier CSV into CallRow objects.
+    Inbound-only by default, matching the Android app — outgoing calls are noise
+    in a harassment packet."""
+    rows = _rows_from_csv(csv_path)
+    if not include_outgoing:
+        rows = [r for r in rows if r.type_label.lower() != "outgoing"]
+    return rows
+
+
+def _rows_from_csv(csv_path: str) -> list[CallRow]:
     raw = pd.read_csv(csv_path, dtype=str, keep_default_na=True)
     lower = {str(c).strip().lower(): c for c in raw.columns}
 
