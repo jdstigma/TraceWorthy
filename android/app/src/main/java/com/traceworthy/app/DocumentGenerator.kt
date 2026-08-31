@@ -659,6 +659,8 @@ object DocumentGenerator {
                 "${stats.flaggedCalls} match a harassment pattern of silent or very short calls from numbers not in my contacts, and a number of the calls additionally involve aggressive or threatening conduct (documented with dates and times in the attached incident timeline). $spoof"
             HarassmentType.Silent ->
                 "${stats.flaggedCalls} match a consistent harassment pattern: incoming calls from numbers not in my contacts on which the caller is silent and/or disconnects within seconds. $spoof"
+            HarassmentType.Unspecified ->
+                "${stats.flaggedCalls} match a harassment pattern: repeated unwanted incoming calls from numbers not in my contacts, many silent or lasting only seconds. $spoof"
         }
     }
 

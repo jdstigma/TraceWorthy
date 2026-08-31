@@ -11,6 +11,7 @@ import java.util.UUID
  *    by the incident timeline built from the user's dated notes.
  */
 enum class HarassmentType(val label: String, val shortLabel: String) {
+    Unspecified("Not sure yet / prefer not to say", "Unsure"),
     Silent("Silent / hang-up calls", "Silent"),
     Aggressive("Aggressive / threatening", "Aggressive"),
     Both("Both", "Both");
@@ -20,7 +21,7 @@ enum class HarassmentType(val label: String, val shortLabel: String) {
 
     companion object {
         fun fromName(name: String?): HarassmentType =
-            entries.firstOrNull { it.name == name } ?: Silent
+            entries.firstOrNull { it.name == name } ?: Unspecified
     }
 }
 
