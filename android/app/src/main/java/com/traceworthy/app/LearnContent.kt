@@ -407,6 +407,74 @@ object LearnContent {
             )
         ),
         Article(
+            title = "Identity theft: the first 48 hours",
+            summary = "The order that actually matters when accounts are opened in your name.",
+            body = listOf(
+                Section(
+                    "Do these first",
+                    listOf(
+                        "1. Call the fraud department of any company where a fraudulent account exists. " +
+                            "Ask them to close it and confirm you owe nothing.",
+                        "2. Place a fraud alert (free, one year) with one credit bureau — it must tell the " +
+                            "other two — or freeze your credit at all three to block new accounts entirely.",
+                        "3. Get your free credit reports at annualcreditreport.com and write down every " +
+                            "account and hard inquiry you don't recognize.",
+                        "4. Report to the FTC at IdentityTheft.gov. Answer the questions and download the " +
+                            "Identity Theft Report and recovery plan.",
+                        "5. File a police report — bring the FTC report, a photo ID, and proof of address.",
+                    )
+                ),
+                Section(
+                    "Then, for each fraudulent account",
+                    listOf(
+                        "Send a dispute letter to the creditor and to each credit bureau, with a copy of " +
+                            "your FTC Identity Theft Report attached. Under the Fair Credit Reporting Act " +
+                            "(§ 605B) they must block information that resulted from identity theft once " +
+                            "you provide the report.",
+                        "Send everything by certified mail and keep copies. Follow up in writing if you " +
+                            "don't hear back within 30 days.",
+                        "TraceWorthy generates all of these letters from your list of fraudulent accounts " +
+                            "— add them under \"Fraudulent accounts\".",
+                    )
+                ),
+            )
+        ),
+        Article(
+            title = "Fraud alert vs. credit freeze",
+            summary = "Which credit protection to use, and what each one costs you.",
+            body = listOf(
+                Section(
+                    "Fraud alert",
+                    listOf(
+                        "Free. Lasts one year (renewable), or seven years with an Identity Theft Report. " +
+                            "You place it with one bureau and they notify the other two.",
+                        "Lenders are told to take extra steps to verify your identity before opening " +
+                            "credit — but it doesn't hard-stop anything. Good if you still need to apply " +
+                            "for credit yourself.",
+                    )
+                ),
+                Section(
+                    "Credit freeze (security freeze)",
+                    listOf(
+                        "Free. Blocks new credit entirely — no one can open an account in your name, " +
+                            "including you, until you lift it.",
+                        "You must place it (and temporarily lift it) at each of the three bureaus " +
+                            "separately. Strongest protection; a small hassle when you do need credit.",
+                    )
+                ),
+                Section(
+                    "Special cases",
+                    listOf(
+                        "SSN misused: also contact the SSA (1-800-772-1213). For tax fraud, file IRS " +
+                            "Form 14039 (Identity Theft Affidavit).",
+                        "Medical identity theft: request an accounting of disclosures from the provider " +
+                            "and dispute errors with the provider and your health plan; you can also " +
+                            "complain to HHS Office for Civil Rights.",
+                    )
+                ),
+            )
+        ),
+        Article(
             title = "Disclaimer & about",
             summary = "Not legal advice; an independent app.",
             body = listOf(

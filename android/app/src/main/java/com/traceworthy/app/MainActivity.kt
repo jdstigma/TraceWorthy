@@ -229,6 +229,7 @@ fun TraceWorthyApp(
                         CaseScreen.Analysis -> AnalysisScreen(entries, onNotesChanged = { refreshEntries() })
                         CaseScreen.FlaggedNumbers -> FlaggedNumbersScreen(entries)
                         CaseScreen.CallTrace -> CallTraceScreen()
+                        CaseScreen.FraudItems -> FraudItemsScreen(case = activeCase, onSave = { saveCase(it) })
                         CaseScreen.Documents -> DocumentsScreen(
                             entries = entries, case = activeCase, myInfo = myInfo,
                             onEditInfo = { go(Destination.Shared(SharedScreen.MyInfo)) },

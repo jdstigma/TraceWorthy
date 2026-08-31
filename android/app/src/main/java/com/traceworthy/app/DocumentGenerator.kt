@@ -24,53 +24,68 @@ import java.util.Locale
  * PDFs sort into filing order in a folder and drop straight into an Acrobat
  * "Combine Files" without re-ordering.
  */
-enum class DocumentType(val displayName: String, val fileSlug: String, val seq: Int, val blurb: String) {
+enum class DocumentType(
+    val displayName: String,
+    val fileSlug: String,
+    val seq: Int,
+    val caseType: CaseType,
+    val blurb: String,
+) {
+    // -- Phone harassment --
     EvidencePacket(
-        "Full evidence packet",
-        "evidence_packet",
-        0,
+        "Full evidence packet", "evidence_packet", 0, CaseType.PhoneHarassment,
         "Bundles every document below into one PDF with a cover page and index — hand this to police or the FCC.",
     ),
     EvidenceSummary(
-        "Evidence summary",
-        "evidence_summary",
-        1,
+        "Evidence summary", "evidence_summary", 1, CaseType.PhoneHarassment,
         "One-page snapshot of your call statistics to attach to any filing.",
     ),
     IncidentTimeline(
-        "Incident timeline",
-        "incident_timeline",
-        2,
+        "Incident timeline", "incident_timeline", 2, CaseType.PhoneHarassment,
         "Chronological log built from your dated notes — shows the pattern and any escalation.",
     ),
     CarrierScript(
-        "Carrier call script",
-        "carrier_script",
-        3,
+        "Carrier call script", "carrier_script", 3, CaseType.PhoneHarassment,
         "Word-for-word script for opening a documented harassment case with your carrier.",
     ),
     FccComplaint(
-        "FCC complaint",
-        "FCC_complaint",
-        4,
+        "FCC complaint", "FCC_complaint", 4, CaseType.PhoneHarassment,
         "Federal record of the spoofing campaign. Paste the description into consumercomplaints.fcc.gov.",
     ),
     PoliceReport(
-        "Harassment–police report cover note",
-        "police_report",
-        5,
+        "Harassment–police report cover note", "police_report", 5, CaseType.PhoneHarassment,
         "Cover note + talking points to hand police so they can subpoena your carrier.",
     ),
     NonDisclosureOrder(
-        "Non-disclosure order request",
-        "non_disclosure_order",
-        6,
+        "Non-disclosure order request", "non_disclosure_order", 6, CaseType.PhoneHarassment,
         "Ask police to pair the carrier subpoena with a court order that keeps it secret, so the caller isn't tipped off.",
-    );
+    ),
 
-    /** The pack this document belongs to. All current documents are phone-harassment;
-     *  when a second pack lands, make this a constructor parameter. */
-    val caseType: CaseType get() = CaseType.PhoneHarassment
+    // -- Identity theft --
+    ItEvidencePacket(
+        "Full evidence packet", "idtheft_packet", 0, CaseType.IdentityTheft,
+        "Bundles every document below into one PDF with a cover page and index.",
+    ),
+    ItEvidenceSummary(
+        "Evidence summary", "idtheft_summary", 1, CaseType.IdentityTheft,
+        "One-page snapshot: what was taken, the fraudulent accounts, and the timeline.",
+    ),
+    ItFtcCompanion(
+        "FTC report companion", "ftc_companion", 2, CaseType.IdentityTheft,
+        "The narrative + account list to paste into IdentityTheft.gov, plus the FTC recovery checklist.",
+    ),
+    ItBureauLetters(
+        "Credit bureau letters", "credit_bureau_letters", 3, CaseType.IdentityTheft,
+        "Fraud-alert and credit-freeze request letters for Equifax, Experian, and TransUnion.",
+    ),
+    ItPoliceReport(
+        "Identity theft — police report cover note", "idtheft_police_report", 4, CaseType.IdentityTheft,
+        "Cover note to hand police so an identity-theft report is on file.",
+    ),
+    ItDisputeLetters(
+        "Creditor dispute letters", "dispute_letters", 5, CaseType.IdentityTheft,
+        "One FCRA §605B block-request letter per fraudulent account, ready to send with your FTC report.",
+    );
 
     companion object {
         fun forCaseType(type: CaseType): List<DocumentType> = entries.filter { it.caseType == type }
@@ -656,14 +671,18 @@ object DocumentGenerator {
         stats: CallStats,
         entries: List<CallEntry>,
         branches: Map<String, String>,
-    ): List<Block> = when (type) {
-        DocumentType.EvidencePacket -> evidencePacket(case, myInfo, stats, entries, branches)
-        DocumentType.FccComplaint -> fccComplaint(case, myInfo, stats, entries)
-        DocumentType.PoliceReport -> policeReport(case, myInfo, stats, entries)
-        DocumentType.CarrierScript -> carrierScript(case, myInfo, stats)
-        DocumentType.IncidentTimeline -> incidentTimeline(case, myInfo, entries)
-        DocumentType.EvidenceSummary -> evidenceSummary(case, myInfo, stats, entries, branches)
-        DocumentType.NonDisclosureOrder -> nonDisclosureOrder(case, myInfo, entries)
+    ): List<Block> = when (case.type) {
+        CaseType.PhoneHarassment -> when (type) {
+            DocumentType.EvidencePacket -> evidencePacket(case, myInfo, stats, entries, branches)
+            DocumentType.FccComplaint -> fccComplaint(case, myInfo, stats, entries)
+            DocumentType.PoliceReport -> policeReport(case, myInfo, stats, entries)
+            DocumentType.CarrierScript -> carrierScript(case, myInfo, stats)
+            DocumentType.IncidentTimeline -> incidentTimeline(case, myInfo, entries)
+            DocumentType.EvidenceSummary -> evidenceSummary(case, myInfo, stats, entries, branches)
+            DocumentType.NonDisclosureOrder -> nonDisclosureOrder(case, myInfo, entries)
+            else -> emptyList()
+        }
+        CaseType.IdentityTheft -> IdentityTheftDocs.build(type, case, myInfo)
     }
 
     /**

@@ -46,8 +46,12 @@ fun DocumentsScreen(
     var previewDoc by remember { mutableStateOf<EditableDocument?>(null) }
     var previewIsPacket by remember { mutableStateOf(false) }
 
+    val docs = DocumentType.forCaseType(case.type)
+    val packetType = docs.first { it.seq == 0 }
+    val individualDocs = docs.filter { it.seq != 0 }.sortedBy { it.seq }
+
     fun openPreview(type: DocumentType) {
-        previewIsPacket = type == DocumentType.EvidencePacket
+        previewIsPacket = type == packetType
         previewDoc = DocumentGenerator.buildEditable(context, type, case, myInfo, entries)
     }
 
@@ -95,7 +99,7 @@ fun DocumentsScreen(
 
         // The bundle comes first and is visually emphasized.
         item {
-            DocumentCard(DocumentType.EvidencePacket, emphasized = true) { openPreview(DocumentType.EvidencePacket) }
+            DocumentCard(packetType, emphasized = true) { openPreview(packetType) }
             Spacer(Modifier.height(16.dp))
             Text(
                 "Or generate documents individually",
@@ -106,7 +110,7 @@ fun DocumentsScreen(
             Spacer(Modifier.height(10.dp))
         }
 
-        items(DocumentType.forCaseType(case.type).filter { it != DocumentType.EvidencePacket }) { type ->
+        items(individualDocs) { type ->
             DocumentCard(type) { openPreview(type) }
             Spacer(Modifier.height(12.dp))
         }

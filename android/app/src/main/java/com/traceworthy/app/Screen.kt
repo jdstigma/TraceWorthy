@@ -4,6 +4,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.CreditCardOff
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.FolderShared
@@ -26,6 +27,7 @@ enum class CaseScreen(val title: String, val icon: ImageVector) {
     Analysis("Analysis", Icons.Filled.BarChart),
     FlaggedNumbers("Flagged numbers", Icons.Filled.Flag),
     CallTrace("Call trace (*57)", Icons.Filled.TrackChanges),
+    FraudItems("Fraudulent accounts", Icons.Filled.CreditCardOff),
     Documents("Documents", Icons.Filled.Description),
 }
 

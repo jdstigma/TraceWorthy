@@ -1,6 +1,7 @@
 package com.traceworthy.app
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CreditCardOff
 import androidx.compose.material.icons.filled.PhoneDisabled
 import androidx.compose.ui.graphics.vector.ImageVector
 
@@ -8,8 +9,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
  * A kind of fraud/abuse the app can document. Each type is a self-contained
  * "pack": which screens it shows, the guided storyboard, and the document set.
  *
- * Only [PhoneHarassment] exists today. Adding a pack = a new entry here, a
- * `docs/<Type>Docs.kt` builder file, and (optionally) type-specific screens.
+ * Adding a pack = a new entry here, a `<Type>Docs` builder object, its
+ * `DocumentType` entries, and (optionally) type-specific screens.
  */
 enum class CaseType(
     val displayName: String,
@@ -24,31 +25,55 @@ enum class CaseType(
         icon = Icons.Filled.PhoneDisabled,
         blurb = "Repeated spoofed or silent calls. Builds the evidence for a carrier traceback.",
         maxInstances = 1,
+    ),
+    IdentityTheft(
+        displayName = "Identity theft",
+        icon = Icons.Filled.CreditCardOff,
+        blurb = "Someone opened accounts or made charges in your name. Builds the FTC report, police packet, and dispute letters.",
+        maxInstances = 3,
     );
 
     /** Case-scoped drawer entries, in order. */
     val drawerScreens: List<CaseScreen>
         get() = when (this) {
             PhoneHarassment -> listOf(
-                CaseScreen.Storyboard,
-                CaseScreen.CallLog,
-                CaseScreen.Analysis,
-                CaseScreen.FlaggedNumbers,
-                CaseScreen.CallTrace,
-                CaseScreen.Documents,
+                CaseScreen.Storyboard, CaseScreen.CallLog, CaseScreen.Analysis,
+                CaseScreen.FlaggedNumbers, CaseScreen.CallTrace, CaseScreen.Documents,
+                CaseScreen.CaseDetail,
+            )
+            IdentityTheft -> listOf(
+                CaseScreen.Storyboard, CaseScreen.FraudItems, CaseScreen.Documents,
                 CaseScreen.CaseDetail,
             )
         }
 
     val documentTypes: List<DocumentType>
-        get() = DocumentType.entries.filter { it.caseType == this }
+        get() = DocumentType.forCaseType(this)
+
+    /** Filing / reference numbers this type tracks, in order. */
+    fun filingKeys(): List<String> = when (this) {
+        PhoneHarassment -> listOf("carrier", "fcc", "police")
+        IdentityTheft -> listOf("ftc", "police")
+    }
+
+    fun filingLabel(key: String): String = when (key) {
+        "carrier" -> "Carrier case #"
+        "fcc" -> "FCC complaint #"
+        "police" -> "Police case #"
+        "ftc" -> "FTC Identity Theft Report #"
+        else -> "Reference #"
+    }
 
     /** The guided storyboard for a case of this type. */
     fun storyboard(): List<Stage> = when (this) {
         PhoneHarassment -> phoneHarassmentStages
+        IdentityTheft -> identityTheftStages
     }
 }
 
+// --------------------------------------------------------------------------- //
+//  Phone harassment
+// --------------------------------------------------------------------------- //
 private val phoneHarassmentStages: List<Stage> = listOf(
     Stage(
         id = "setup",
@@ -136,10 +161,84 @@ private val phoneHarassmentStages: List<Stage> = listOf(
         destination = CaseScreen.Documents,
         derive = { c ->
             val filed = listOf("carrier", "fcc", "police").count { c.case.filing(it).isNotBlank() }
-            when (filed) {
-                3 -> StageStatus.InProgress
+            if (filed == 3) StageStatus.InProgress else StageStatus.NotStarted
+        },
+    ),
+)
+
+// --------------------------------------------------------------------------- //
+//  Identity theft
+// --------------------------------------------------------------------------- //
+private val identityTheftStages: List<Stage> = listOf(
+    Stage(
+        id = "ftc",
+        title = "Report to the FTC",
+        summary = "Go to IdentityTheft.gov, answer the questions, and get your Identity Theft Report. Save its number here — police and creditors accept it in place of a police report in many cases.",
+        actionLabel = "Build the FTC companion",
+        destination = CaseScreen.Documents,
+        filingKey = "ftc",
+        derive = { c -> if (c.case.filing("ftc").isNotBlank()) StageStatus.Done else StageStatus.NotStarted },
+    ),
+    Stage(
+        id = "items",
+        title = "List the fraudulent accounts",
+        summary = "Add every account, charge, or misuse you've found — the institution, roughly how much, and when you spotted it. This drives every letter.",
+        actionLabel = "Add fraudulent accounts",
+        destination = CaseScreen.FraudItems,
+        derive = { c ->
+            when {
+                c.case.fraudItems.isEmpty() -> StageStatus.NotStarted
+                else -> StageStatus.InProgress
+            }
+        },
+    ),
+    Stage(
+        id = "protect",
+        title = "Place a fraud alert or credit freeze",
+        summary = "Contact one credit bureau for a free one-year fraud alert (they tell the other two), or freeze your credit at all three to block new accounts entirely. Use the credit-bureau letters.",
+        actionLabel = "Build the bureau letters",
+        destination = CaseScreen.Documents,
+        derive = { c ->
+            when (c.case.td("creditProtection")) {
+                "freeze", "alert" -> StageStatus.Done
                 else -> StageStatus.NotStarted
             }
+        },
+    ),
+    Stage(
+        id = "police",
+        title = "File a police report",
+        summary = "Bring the police report cover note, your FTC report, and your ID + proof of address to your local police. Save the case number.",
+        actionLabel = "Build the police report",
+        destination = CaseScreen.Documents,
+        filingKey = "police",
+        derive = { c -> if (c.case.filing("police").isNotBlank()) StageStatus.Done else StageStatus.NotStarted },
+    ),
+    Stage(
+        id = "dispute",
+        title = "Dispute each fraudulent account",
+        summary = "Send the dispute letter to each creditor and bank, with your FTC report attached. Mark each account Disputed as you go.",
+        actionLabel = "Build the dispute letters",
+        destination = CaseScreen.Documents,
+        derive = { c ->
+            val items = c.case.fraudItems
+            when {
+                items.isEmpty() -> StageStatus.NotStarted
+                items.all { it.status == FraudStatus.Disputed || it.status == FraudStatus.Resolved } -> StageStatus.Done
+                items.any { it.status == FraudStatus.Disputed || it.status == FraudStatus.Resolved } -> StageStatus.InProgress
+                else -> StageStatus.NotStarted
+            }
+        },
+    ),
+    Stage(
+        id = "packet",
+        title = "Keep everything together",
+        summary = "Generate the full packet and keep it with your FTC report and correspondence. Follow up with any creditor that doesn't respond within 30 days.",
+        actionLabel = "Build the packet",
+        destination = CaseScreen.Documents,
+        derive = { c ->
+            if (c.case.filing("ftc").isNotBlank() && c.case.fraudItems.isNotEmpty()) StageStatus.InProgress
+            else StageStatus.NotStarted
         },
     ),
 )

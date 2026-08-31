@@ -78,9 +78,11 @@ object CaseStore {
         val case = Case(
             type = CaseType.PhoneHarassment,
             title = CaseType.PhoneHarassment.displayName,
-            affectedNumber = p.getString("affectedNumber", "") ?: "",
-            carrier = p.getString("carrier", "") ?: "",
-            harassmentType = HarassmentType.fromName(p.getString("harassmentType", null)),
+            typeData = buildMap {
+                p.getString("affectedNumber", "")?.takeIf { it.isNotBlank() }?.let { put("affectedNumber", it) }
+                p.getString("carrier", "")?.takeIf { it.isNotBlank() }?.let { put("carrier", it) }
+                p.getString("harassmentType", null)?.let { put("harassmentType", HarassmentType.fromName(it).name) }
+            },
             filingNumbers = buildMap {
                 p.getString("fccComplaintNumber", "")?.takeIf { it.isNotBlank() }?.let { put("fcc", it) }
                 p.getString("policeCaseNumber", "")?.takeIf { it.isNotBlank() }?.let { put("police", it) }
