@@ -2,7 +2,7 @@ name: Build TraceWorthy
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, v2 ]
   workflow_dispatch:      # manual trigger from the Actions tab
   release:
     types: [ published ]  # publishing a release builds the signed APK
