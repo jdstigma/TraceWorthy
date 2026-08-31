@@ -73,6 +73,17 @@ fun HomeScreen(
         Spacer(Modifier.height(12.dp))
 
         ActionCard(
+            header = "Carrier Case",
+            title = "Open a carrier harassment case",
+            subtitle = "Start here — get a case number. Your phone company logs the pattern and can block in bulk. Script included.",
+            buttonText = "Build it",
+            icon = Icons.Filled.SupportAgent,
+            done = profile.carrierCaseNumber.isNotBlank(),
+            onClick = { onNavigate(Screen.Documents) },
+        )
+        Spacer(Modifier.height(12.dp))
+
+        ActionCard(
             header = "FCC Complaint",
             title = "File with the FCC",
             subtitle = "The federal record of the spoofing campaign. Free, online, 10 minutes.",
@@ -86,21 +97,10 @@ fun HomeScreen(
         ActionCard(
             header = "Harassment–Police Report",
             title = "File a police report",
-            subtitle = "This is what lets police subpoena your carrier and unmask the real caller.",
+            subtitle = "File last — it cross-references the case numbers above. This is what lets police subpoena your carrier and unmask the real caller.",
             buttonText = "Build it",
             icon = Icons.Filled.Gavel,
             done = profile.policeCaseNumber.isNotBlank(),
-            onClick = { onNavigate(Screen.Documents) },
-        )
-        Spacer(Modifier.height(12.dp))
-
-        ActionCard(
-            header = "Carrier Case",
-            title = "Open a carrier harassment case",
-            subtitle = "Your phone company logs the pattern and can block in bulk. Script included.",
-            buttonText = "Build it",
-            icon = Icons.Filled.SupportAgent,
-            done = profile.carrierCaseNumber.isNotBlank(),
             onClick = { onNavigate(Screen.Documents) },
         )
         Spacer(Modifier.height(24.dp))

@@ -1,5 +1,8 @@
 package com.traceworthy.app
 
+import android.content.Intent
+import android.net.Uri
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -14,6 +17,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -25,13 +29,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.traceworthy.app.ui.CGCard
 
+private const val RELEASES_URL = "https://github.com/jdstigma/TraceWorthy/releases/latest"
+
 @Composable
 fun LearnScreen() {
+    val context = LocalContext.current
     LazyColumn(
         Modifier.fillMaxSize().padding(16.dp),
     ) {
@@ -50,6 +58,34 @@ fun LearnScreen() {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(Modifier.height(16.dp))
+        }
+        item {
+            CGCard {
+                Text(
+                    "Companion PC tools",
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 16.sp,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    "Free desktop downloads on GitHub: TraceWorthy.exe turns any carrier CSV " +
+                        "into the full document packet, and TraceWorthy-iPhone.exe pulls call " +
+                        "history from an encrypted iPhone backup (the only way to get it — iOS " +
+                        "blocks apps).",
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(10.dp))
+                Button(onClick = {
+                    try {
+                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(RELEASES_URL)))
+                    } catch (e: Exception) {
+                        Toast.makeText(context, "No app can open this link", Toast.LENGTH_SHORT).show()
+                    }
+                }) { Text("Open the downloads page") }
+            }
+            Spacer(Modifier.height(12.dp))
         }
         items(LearnContent.articles) { article ->
             ArticleCard(article)

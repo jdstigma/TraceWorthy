@@ -171,6 +171,45 @@ object LearnContent {
             )
         ),
         Article(
+            title = "Blocked, private, and \"Unknown\" callers",
+            summary = "When the number is hidden (not fake) — and the paid services that reveal it.",
+            body = listOf(
+                Section(
+                    "Hidden, not fake",
+                    listOf(
+                        "\"No Caller ID\", \"Private Number\", \"Withheld\", \"Anonymous\", or a call " +
+                            "placed with *67 means the caller told the network to hide their number " +
+                            "from your screen. This is different from spoofing, where a fake number is " +
+                            "shown. TraceWorthy still logs the call and its time, but there is no " +
+                            "number to record.",
+                    )
+                ),
+                Section(
+                    "Why the app can't reveal it",
+                    listOf(
+                        "The real number is still in the call setup — it's just flagged " +
+                            "\"presentation restricted\". Reading it requires access at the carrier / " +
+                            "signaling level, which no app can reach. Only your carrier or law " +
+                            "enforcement can unmask a withheld number.",
+                    )
+                ),
+                Section(
+                    "TrapCall-style services",
+                    listOf(
+                        "Paid services (TrapCall is the best known) reveal withheld numbers by " +
+                            "briefly routing your unanswered calls through their system, which reads " +
+                            "the number before ringing you back.",
+                        "If you use one, write the revealed number into a note on that call " +
+                            "(Call log → tap the call → add a note), or into the Note column of your " +
+                            "CSV. It then flows into your evidence like any other number.",
+                        "Know the trade-offs: these cost a monthly fee, add a short delay before " +
+                            "your phone rings, and only work on withheld calls — not spoofed ones. " +
+                            "They supplement the carrier / police path; they don't replace it.",
+                    )
+                ),
+            )
+        ),
+        Article(
             title = "Reduce the volume: carrier + phone tools",
             summary = "Free blocking tools that cut the flood while you build your case.",
             body = listOf(
