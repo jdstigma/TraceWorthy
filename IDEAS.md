@@ -40,13 +40,24 @@ _(moved here when we pick them up)_
 
 ## Done
 
+- **v1.8.0 batch (2026-08-30):** non-disclosure order request doc (#10) + "Keep the
+  subpoena secret" Learn article; spoofing explainer in the evidence summary (#9);
+  "How To Use This Packet" cover roadmap + "not legal advice" footer on every doc
+  (A+B); "Blocked, private, and 'Unknown' callers" Learn article covering TrapCall-style
+  services (#4); "Companion PC tools" card on Learn linking the GitHub releases (#6);
+  Home checklist reordered carrier → FCC → police to match the packet.
+
 - **Separate "affected number" from the contact number** — My info had one `phone`
   field doing double duty; the harassed line and the contact line are often different
   (e.g. a wiped/retired line vs. a current number). Added `affectedNumber` /
   `affected_number` (blank = same as contact) with an `affectedLine` fallback, wired
   through every document: police "Affected line", FCC "your phone number (the line
   that was called)" + "best number to reach you", carrier context, and the
-  summary/timeline/packet headers. App + PC.
+  summary/timeline/packet headers. App + PC. — v1.8.0
+
+- **Packet reorder + numbered filenames** — evidence summary → timeline → carrier →
+  FCC → police → non-disclosure order; individual PDFs `TraceWorthy_NN_<slug>_*.pdf`
+  (00 = bundle) so an Acrobat "Combine Files" is pre-sorted. App + PC. — v1.8.0
 
 - **iPhone route (`iphone/`)** — PC tool: read an encrypted iPhone backup →
   extract `CallHistory.storedata` → app-format CSV → full evidence packet. New
