@@ -129,7 +129,8 @@ def cmd_csv(args):
 
     try:
         calls = chp.parse(storedata, ab, include_facetime=args.facetime,
-                          include_app_calls=args.include_app_calls)
+                          include_app_calls=args.include_app_calls,
+                          include_outgoing=args.include_outgoing)
     except chp.NoCallRecords as e:
         sys.exit(str(e))
     chp.write_csv(calls, args.out)
@@ -173,6 +174,8 @@ def build_parser() -> argparse.ArgumentParser:
     c.add_argument("--facetime", action="store_true", help="Include FaceTime calls (default: cellular only)")
     c.add_argument("--include-app-calls", action="store_true",
                    help="Include third-party VoIP app calls (WhatsApp, etc.)")
+    c.add_argument("--include-outgoing", action="store_true",
+                   help="Include calls you placed (default: incoming only, matching the app)")
     c.add_argument("--out", default="iphone_calls.csv")
     c.set_defaults(func=cmd_csv)
 
