@@ -19,6 +19,7 @@ DEFAULT_PATH = "traceworthy_profile.json"
 class HarassmentType(str, Enum):
     """What kind of harassment is being documented — changes document wording."""
 
+    UNSPECIFIED = "Unspecified"
     SILENT = "Silent"
     AGGRESSIVE = "Aggressive"
     BOTH = "Both"
@@ -34,6 +35,7 @@ class HarassmentType(str, Enum):
     @property
     def label(self) -> str:
         return {
+            HarassmentType.UNSPECIFIED: "Not sure yet / prefer not to say",
             HarassmentType.SILENT: "Silent / hang-up calls",
             HarassmentType.AGGRESSIVE: "Aggressive / threatening",
             HarassmentType.BOTH: "Both",
@@ -44,7 +46,7 @@ class HarassmentType(str, Enum):
         for m in cls:
             if m.value == value:
                 return m
-        return cls.SILENT
+        return cls.UNSPECIFIED
 
 
 @dataclass
@@ -58,7 +60,7 @@ class Profile:
     address_city: str = ""
     state: str = ""            # two-letter USPS code, e.g. "CA"
     carrier: str = ""          # e.g. "Verizon", "AT&T", "T-Mobile"
-    harassment_type: HarassmentType = field(default=HarassmentType.SILENT)
+    harassment_type: HarassmentType = field(default=HarassmentType.UNSPECIFIED)
     fcc_complaint_number: str = ""
     police_case_number: str = ""
     carrier_case_number: str = ""
