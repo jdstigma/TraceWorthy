@@ -9,10 +9,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -31,21 +29,15 @@ import com.traceworthy.app.ui.SectionHeader
 
 @Composable
 fun MyInfoScreen(
-    profile: UserProfile,
-    onSave: (UserProfile) -> Unit,
+    info: MyInfo,
+    onSave: (MyInfo) -> Unit,
 ) {
     val context = LocalContext.current
-    var fullName by remember { mutableStateOf(profile.fullName) }
-    var phone by remember { mutableStateOf(profile.phone) }
-    var affectedNumber by remember { mutableStateOf(profile.affectedNumber) }
-    var email by remember { mutableStateOf(profile.email) }
-    var city by remember { mutableStateOf(profile.addressCity) }
-    var state by remember { mutableStateOf(profile.state) }
-    var carrier by remember { mutableStateOf(profile.carrier) }
-    var harassmentType by remember { mutableStateOf(profile.harassmentType) }
-    var fccNo by remember { mutableStateOf(profile.fccComplaintNumber) }
-    var policeNo by remember { mutableStateOf(profile.policeCaseNumber) }
-    var carrierNo by remember { mutableStateOf(profile.carrierCaseNumber) }
+    var fullName by remember { mutableStateOf(info.fullName) }
+    var phone by remember { mutableStateOf(info.phone) }
+    var email by remember { mutableStateOf(info.email) }
+    var city by remember { mutableStateOf(info.addressCity) }
+    var state by remember { mutableStateOf(info.state) }
 
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)
@@ -58,8 +50,9 @@ fun MyInfoScreen(
         )
         Spacer(Modifier.height(2.dp))
         Text(
-            "Enter this once. Every document auto-fills from it. Stored only on this phone — " +
-                "nothing is uploaded.",
+            "Your identity — used in every case's documents. Case-specific details (the " +
+                "affected number, carrier, and case numbers) live on each case. Stored only on " +
+                "this phone.",
             fontSize = 13.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -70,72 +63,21 @@ fun MyInfoScreen(
             Spacer(Modifier.height(12.dp))
             Field("Full name", fullName) { fullName = it }
             Field("Contact phone (where officials reach you)", phone) { phone = it }
-            Field("Affected number (the line getting the calls)", affectedNumber) { affectedNumber = it }
-            Text(
-                "Leave \"Affected number\" blank if it's the same as your contact phone.",
-                fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
             Field("Email", email) { email = it }
             Field("City", city) { city = it }
             Field("State (2-letter, e.g. CA)", state) { state = it }
-            Field("Carrier (e.g. Verizon)", carrier) { carrier = it }
-        }
-        Spacer(Modifier.height(16.dp))
-
-        CGCard {
-            SectionHeader("Type of harassment")
-            Spacer(Modifier.height(4.dp))
-            Text(
-                "This tailors the wording of your documents. Pick \"Aggressive\" if calls " +
-                    "involve threats or abuse — that unlocks an incident timeline built from your notes.",
-                fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(12.dp))
-            Row {
-                HarassmentType.entries.forEach { type ->
-                    FilterChip(
-                        selected = harassmentType == type,
-                        onClick = { harassmentType = type },
-                        label = { Text(type.shortLabel) },
-                        modifier = Modifier.padding(end = 8.dp),
-                    )
-                }
-            }
-        }
-        Spacer(Modifier.height(16.dp))
-
-        CGCard {
-            SectionHeader("Case numbers")
-            Spacer(Modifier.height(4.dp))
-            Text(
-                "Fill these in as you file each one — they cross-reference into your documents.",
-                fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(12.dp))
-            Field("FCC complaint #", fccNo) { fccNo = it }
-            Field("Police case #", policeNo) { policeNo = it }
-            Field("Carrier case #", carrierNo) { carrierNo = it }
         }
         Spacer(Modifier.height(20.dp))
 
         Button(
             onClick = {
                 onSave(
-                    UserProfile(
+                    MyInfo(
                         fullName = fullName.trim(),
                         phone = phone.trim(),
-                        affectedNumber = affectedNumber.trim(),
                         email = email.trim(),
                         addressCity = city.trim(),
                         state = state.trim().uppercase(),
-                        carrier = carrier.trim(),
-                        harassmentType = harassmentType,
-                        fccComplaintNumber = fccNo.trim(),
-                        policeCaseNumber = policeNo.trim(),
-                        carrierCaseNumber = carrierNo.trim(),
                     )
                 )
                 Toast.makeText(context, "Saved", Toast.LENGTH_SHORT).show()

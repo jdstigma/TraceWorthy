@@ -38,7 +38,8 @@ import com.traceworthy.app.ui.CGCard
 @Composable
 fun DocumentsScreen(
     entries: List<CallEntry>,
-    profile: UserProfile,
+    case: Case,
+    myInfo: MyInfo,
     onEditInfo: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -47,7 +48,7 @@ fun DocumentsScreen(
 
     fun openPreview(type: DocumentType) {
         previewIsPacket = type == DocumentType.EvidencePacket
-        previewDoc = DocumentGenerator.buildEditable(context, type, profile, entries)
+        previewDoc = DocumentGenerator.buildEditable(context, type, case, myInfo, entries)
     }
 
     Box(Modifier.fillMaxSize()) {
@@ -68,7 +69,7 @@ fun DocumentsScreen(
             )
             Spacer(Modifier.height(12.dp))
 
-            if (!profile.isReadyForDocuments) {
+            if (!myInfo.isReadyForDocuments) {
                 CGCard {
                     Text(
                         "Add your info first",
@@ -105,7 +106,7 @@ fun DocumentsScreen(
             Spacer(Modifier.height(10.dp))
         }
 
-        items(DocumentType.entries.filter { it != DocumentType.EvidencePacket }) { type ->
+        items(DocumentType.forCaseType(case.type).filter { it != DocumentType.EvidencePacket }) { type ->
             DocumentCard(type) { openPreview(type) }
             Spacer(Modifier.height(12.dp))
         }

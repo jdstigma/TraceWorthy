@@ -29,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.traceworthy.app.Severity
+import com.traceworthy.app.StageStatus
 import com.traceworthy.app.ui.theme.Teal
 import com.traceworthy.app.ui.theme.TealDeep
 import com.traceworthy.app.ui.theme.Coral
@@ -118,6 +119,90 @@ fun StatTile(
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+        }
+    }
+}
+
+/** Small status pill for a storyboard stage. */
+@Composable
+fun StageStatusChip(status: StageStatus, modifier: Modifier = Modifier) {
+    val (label, bg, fg) = when (status) {
+        StageStatus.Done -> Triple("Done", Color(0xFFE3F3EE), Color(0xFF1B7A63))
+        StageStatus.InProgress -> Triple("In progress", Color(0xFFFAEEDA), Color(0xFF854F0B))
+        StageStatus.NotStarted -> Triple("Not started", Color(0xFFECEEF2), Color(0xFF5B6472))
+    }
+    Surface(color = bg, shape = RoundedCornerShape(6.dp), modifier = modifier) {
+        Text(
+            label,
+            color = fg,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+        )
+    }
+}
+
+/**
+ * One storyboard step. Numbered, status-chipped, with the action button and an
+ * optional inline "confirmation #" field for filing stages.
+ */
+@Composable
+fun StageCard(
+    index: Int,
+    title: String,
+    summary: String,
+    status: StageStatus,
+    actionLabel: String,
+    onAction: () -> Unit,
+    filingValue: String? = null,
+    onFilingChange: ((String) -> Unit)? = null,
+    filingLabel: String = "Confirmation / case #",
+) {
+    CGCard {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Surface(
+                shape = CircleShape,
+                color = if (status == StageStatus.Done) Teal else MaterialTheme.colorScheme.surfaceVariant,
+                modifier = Modifier.size(26.dp),
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text(
+                        if (status == StageStatus.Done) "✓" else index.toString(),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (status == StageStatus.Done) TealDeep else MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            Spacer(Modifier.width(10.dp))
+            Text(
+                title,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 15.sp,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f),
+            )
+            StageStatusChip(status)
+        }
+        Spacer(Modifier.height(6.dp))
+        Text(summary, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (filingValue != null && onFilingChange != null) {
+            Spacer(Modifier.height(8.dp))
+            androidx.compose.material3.OutlinedTextField(
+                value = filingValue,
+                onValueChange = onFilingChange,
+                label = { Text(filingLabel) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        Spacer(Modifier.height(12.dp))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+            Button(
+                onClick = onAction,
+                colors = ButtonDefaults.buttonColors(containerColor = Teal, contentColor = TealDeep),
+                shape = RoundedCornerShape(10.dp),
+            ) { Text(actionLabel, fontWeight = FontWeight.SemiBold) }
         }
     }
 }

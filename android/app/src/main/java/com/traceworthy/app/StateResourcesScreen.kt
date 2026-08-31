@@ -44,9 +44,9 @@ import com.traceworthy.app.ui.CGCard
 import com.traceworthy.app.ui.SectionHeader
 
 @Composable
-fun StateResourcesScreen(profile: UserProfile) {
+fun StateResourcesScreen(myInfo: MyInfo) {
     val context = LocalContext.current
-    var selectedUsps by remember { mutableStateOf(profile.state) }
+    var selectedUsps by remember { mutableStateOf(myInfo.state) }
     var expanded by remember { mutableStateOf(false) }
     val selected = Contacts.forUsps(selectedUsps)
 
@@ -190,7 +190,7 @@ fun StateResourcesScreen(profile: UserProfile) {
             Spacer(Modifier.height(12.dp))
             OutlinedButton(
                 onClick = {
-                    val city = profile.addressCity
+                    val city = myInfo.addressCity
                     val q = Uri.encode("$city police non-emergency number".trim())
                     open("https://www.google.com/search?q=$q")
                 },

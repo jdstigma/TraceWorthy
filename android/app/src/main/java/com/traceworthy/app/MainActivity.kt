@@ -5,8 +5,9 @@ import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,11 +21,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material3.Button
 import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -52,19 +58,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
-import com.traceworthy.app.ui.theme.TraceWorthyTheme
+import com.traceworthy.app.ui.theme.Coral
+import com.traceworthy.app.ui.theme.CoralDeep
 import com.traceworthy.app.ui.theme.Navy
 import com.traceworthy.app.ui.theme.SlateLight
 import com.traceworthy.app.ui.theme.Teal
 import com.traceworthy.app.ui.theme.TealDeep
-import com.traceworthy.app.ui.theme.Coral
-import com.traceworthy.app.ui.theme.CoralDeep
+import com.traceworthy.app.ui.theme.TraceWorthyTheme
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        CaseStore.ensureMigrated(this)
         setContent {
             var themeMode by remember { mutableStateOf(SettingsStore.themeMode(this@MainActivity)) }
             val dark = when (themeMode) {
@@ -106,7 +113,12 @@ fun TraceWorthyApp(
     val scope = rememberCoroutineScope()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
 
-    var current by remember { mutableStateOf(Screen.Home) }
+    var cases by remember { mutableStateOf(CaseStore.all(context).ifEmpty { listOf(CaseStore.ensureAtLeastOne(context)) }) }
+    var activeId by remember { mutableStateOf(CaseStore.activeCaseId(context) ?: cases.first().id) }
+    val activeCase = cases.firstOrNull { it.id == activeId } ?: cases.first()
+    var myInfo by remember { mutableStateOf(MyInfoStore.load(context)) }
+
+    var current by remember { mutableStateOf<Destination>(Destination.Case(CaseScreen.Storyboard)) }
     var granted by remember {
         mutableStateOf(
             ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALL_LOG)
@@ -114,7 +126,6 @@ fun TraceWorthyApp(
         )
     }
     var entries by remember { mutableStateOf<List<CallEntry>>(emptyList()) }
-    var profile by remember { mutableStateOf(ProfileStore.load(context)) }
 
     val permissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -127,21 +138,62 @@ fun TraceWorthyApp(
         if (granted) entries = CallLogRepository.readAll(context)
     }
 
-    fun go(screen: Screen) {
-        current = screen
+    fun refreshEntries() {
+        if (granted) entries = CallLogRepository.readAll(context)
+    }
+
+    fun saveCase(updated: Case) {
+        cases = CaseStore.upsert(context, updated)
+    }
+
+    fun switchCase(id: String) {
+        activeId = id
+        CaseStore.setActiveCaseId(context, id)
+        current = Destination.Case(CaseScreen.Storyboard)
+    }
+
+    fun createCase(type: CaseType) {
+        val c = Case(type = type)
+        cases = CaseStore.upsert(context, c)
+        switchCase(c.id)
+    }
+
+    fun deleteCase(c: Case) {
+        cases = CaseStore.delete(context, c.id)
+        if (cases.isEmpty()) cases = listOf(CaseStore.ensureAtLeastOne(context))
+        switchCase(CaseStore.activeCaseId(context) ?: cases.first().id)
+    }
+
+    fun go(dest: Destination) {
+        current = dest
         scope.launch { drawerState.close() }
     }
+
+    val phoneScreens = setOf(CaseScreen.Storyboard, CaseScreen.CallLog, CaseScreen.Analysis, CaseScreen.FlaggedNumbers)
 
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
-            DrawerSheet(current = current, onSelect = { go(it) })
+            DrawerSheet(
+                activeCase = activeCase,
+                current = current,
+                onSelect = { go(it) },
+            )
         },
     ) {
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text(current.title) },
+                    title = {
+                        CaseSwitcherTitle(
+                            title = if (current is Destination.Case) activeCase.title else current.title,
+                            cases = cases,
+                            activeId = activeId,
+                            onSwitch = { switchCase(it) },
+                            onNew = { go(Destination.NewCase) },
+                            enabled = current is Destination.Case,
+                        )
+                    },
                     navigationIcon = {
                         IconButton(onClick = { scope.launch { drawerState.open() } }) {
                             Icon(Icons.Filled.Menu, contentDescription = "Open menu")
@@ -157,36 +209,57 @@ fun TraceWorthyApp(
             containerColor = MaterialTheme.colorScheme.background,
         ) { padding ->
             Column(Modifier.padding(padding).fillMaxSize()) {
-                if (!granted && current in setOf(Screen.Home, Screen.CallLog, Screen.Analysis, Screen.FlaggedNumbers)) {
+                val onPhoneScreen = (current as? Destination.Case)?.screen in phoneScreens
+                if (!granted && onPhoneScreen) {
                     PermissionBanner(
                         onGrant = { permissionLauncher.launch(Manifest.permission.READ_CALL_LOG) }
                     )
                 }
-                when (current) {
-                    Screen.Home -> HomeScreen(entries, profile, onNavigate = { go(it) })
-                    Screen.CallLog -> CallLogScreen(entries, onRefresh = {
-                        if (granted) entries = CallLogRepository.readAll(context)
-                    })
-                    Screen.Analysis -> AnalysisScreen(entries, onNotesChanged = {
-                        if (granted) entries = CallLogRepository.readAll(context)
-                    })
-                    Screen.FlaggedNumbers -> FlaggedNumbersScreen(entries)
-                    Screen.CallTrace -> CallTraceScreen()
-                    Screen.Documents -> DocumentsScreen(entries, profile, onEditInfo = { go(Screen.MyInfo) })
-                    Screen.Learn -> LearnScreen()
-                    Screen.StateHelp -> StateResourcesScreen(profile)
-                    Screen.MyInfo -> MyInfoScreen(profile, onSave = {
-                        profile = it
-                        ProfileStore.save(context, it)
-                    })
-                    Screen.Settings -> SettingsScreen(
-                        current = SettingsStore.flagThresholdSeconds(context),
-                        onSave = { seconds ->
-                            SettingsStore.setFlagThresholdSeconds(context, seconds)
-                            if (granted) entries = CallLogRepository.readAll(context)
-                        },
-                        themeMode = themeMode,
-                        onThemeModeChange = onThemeModeChange,
+                when (val dest = current) {
+                    is Destination.Case -> when (dest.screen) {
+                        CaseScreen.Storyboard -> CaseStoryboardScreen(
+                            case = activeCase, myInfo = myInfo, entries = entries, granted = granted,
+                            onNavigate = { go(Destination.Case(it)) },
+                            onCaseChange = { saveCase(it) },
+                        )
+                        CaseScreen.CaseDetail -> CaseDetailScreen(
+                            case = activeCase, myInfo = myInfo, onSave = { saveCase(it) },
+                        )
+                        CaseScreen.CallLog -> CallLogScreen(entries, onRefresh = { refreshEntries() })
+                        CaseScreen.Analysis -> AnalysisScreen(entries, onNotesChanged = { refreshEntries() })
+                        CaseScreen.FlaggedNumbers -> FlaggedNumbersScreen(entries)
+                        CaseScreen.CallTrace -> CallTraceScreen()
+                        CaseScreen.Documents -> DocumentsScreen(
+                            entries = entries, case = activeCase, myInfo = myInfo,
+                            onEditInfo = { go(Destination.Shared(SharedScreen.MyInfo)) },
+                        )
+                    }
+                    is Destination.Shared -> when (dest.screen) {
+                        SharedScreen.Cases -> CaseListScreen(
+                            cases = cases, activeId = activeId,
+                            onOpen = { switchCase(it.id) },
+                            onNew = { go(Destination.NewCase) },
+                            onDelete = { deleteCase(it) },
+                        )
+                        SharedScreen.Learn -> LearnScreen()
+                        SharedScreen.StateHelp -> StateResourcesScreen(myInfo)
+                        SharedScreen.MyInfo -> MyInfoScreen(myInfo, onSave = {
+                            myInfo = it
+                            MyInfoStore.save(context, it)
+                        })
+                        SharedScreen.Settings -> SettingsScreen(
+                            current = SettingsStore.flagThresholdSeconds(context),
+                            onSave = { seconds ->
+                                SettingsStore.setFlagThresholdSeconds(context, seconds)
+                                refreshEntries()
+                            },
+                            themeMode = themeMode,
+                            onThemeModeChange = onThemeModeChange,
+                        )
+                    }
+                    Destination.NewCase -> NewCaseScreen(
+                        existing = cases,
+                        onCreate = { createCase(it) },
                     )
                 }
             }
@@ -195,13 +268,52 @@ fun TraceWorthyApp(
 }
 
 @Composable
-private fun DrawerSheet(current: Screen, onSelect: (Screen) -> Unit) {
+private fun CaseSwitcherTitle(
+    title: String,
+    cases: List<Case>,
+    activeId: String,
+    onSwitch: (String) -> Unit,
+    onNew: () -> Unit,
+    enabled: Boolean,
+) {
+    var open by remember { mutableStateOf(false) }
+    Box {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = if (enabled) Modifier.clickable { open = true } else Modifier,
+        ) {
+            Text(title, fontWeight = FontWeight.SemiBold)
+            if (enabled) Icon(Icons.Filled.ArrowDropDown, contentDescription = "Switch case")
+        }
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            cases.forEach { c ->
+                DropdownMenuItem(
+                    text = { Text(c.title + if (c.id == activeId) "  ✓" else "") },
+                    onClick = { open = false; onSwitch(c.id) },
+                )
+            }
+            HorizontalDivider()
+            DropdownMenuItem(
+                text = { Text("New case…") },
+                leadingIcon = { Icon(Icons.Filled.Add, contentDescription = null) },
+                onClick = { open = false; onNew() },
+            )
+        }
+    }
+}
+
+@Composable
+private fun DrawerSheet(
+    activeCase: Case,
+    current: Destination,
+    onSelect: (Destination) -> Unit,
+) {
     ModalDrawerSheet(
         drawerContainerColor = Navy,
-        modifier = Modifier.fillMaxWidth(0.78f),
+        modifier = Modifier.fillMaxWidth(0.80f),
     ) {
         Row(
-            Modifier.padding(start = 20.dp, top = 24.dp, bottom = 20.dp),
+            Modifier.padding(start = 20.dp, top = 24.dp, bottom = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Surface(shape = RoundedCornerShape(10.dp), color = Coral, modifier = Modifier.size(36.dp)) {
@@ -212,27 +324,66 @@ private fun DrawerSheet(current: Screen, onSelect: (Screen) -> Unit) {
             Spacer(Modifier.width(12.dp))
             Column {
                 Text("TraceWorthy", color = androidx.compose.ui.graphics.Color.White, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
-                Text("Evidence for a traceback", color = SlateLight, fontSize = 12.sp)
+                Text("Evidence, organized", color = SlateLight, fontSize = 12.sp)
             }
         }
-        Screen.menuOrder.forEach { screen ->
-            NavigationDrawerItem(
-                label = { Text(screen.title) },
-                icon = { Icon(screen.icon, contentDescription = null) },
-                selected = screen == current,
-                onClick = { onSelect(screen) },
-                colors = NavigationDrawerItemDefaults.colors(
-                    selectedContainerColor = Teal,
-                    selectedTextColor = TealDeep,
-                    selectedIconColor = TealDeep,
-                    unselectedContainerColor = Navy,
-                    unselectedTextColor = SlateLight,
-                    unselectedIconColor = SlateLight,
-                ),
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp),
+
+        DrawerGroupLabel(activeCase.title.uppercase())
+        activeCase.type.drawerScreens.forEach { screen ->
+            DrawerItem(
+                title = screen.title,
+                icon = screen.icon,
+                selected = (current as? Destination.Case)?.screen == screen,
+                onClick = { onSelect(Destination.Case(screen)) },
+            )
+        }
+
+        Spacer(Modifier.height(12.dp))
+        DrawerGroupLabel("EVERYTHING ELSE")
+        SharedScreen.entries.forEach { screen ->
+            DrawerItem(
+                title = screen.title,
+                icon = screen.icon,
+                selected = (current as? Destination.Shared)?.screen == screen,
+                onClick = { onSelect(Destination.Shared(screen)) },
             )
         }
     }
+}
+
+@Composable
+private fun DrawerGroupLabel(text: String) {
+    Text(
+        text,
+        color = SlateLight,
+        fontSize = 11.sp,
+        fontWeight = FontWeight.SemiBold,
+        modifier = Modifier.padding(start = 28.dp, top = 4.dp, bottom = 4.dp),
+    )
+}
+
+@Composable
+private fun DrawerItem(
+    title: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    NavigationDrawerItem(
+        label = { Text(title) },
+        icon = { Icon(icon, contentDescription = null) },
+        selected = selected,
+        onClick = onClick,
+        colors = NavigationDrawerItemDefaults.colors(
+            selectedContainerColor = Teal,
+            selectedTextColor = TealDeep,
+            selectedIconColor = TealDeep,
+            unselectedContainerColor = Navy,
+            unselectedTextColor = SlateLight,
+            unselectedIconColor = SlateLight,
+        ),
+        modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp),
+    )
 }
 
 @Composable
