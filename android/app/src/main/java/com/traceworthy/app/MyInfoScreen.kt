@@ -37,6 +37,7 @@ fun MyInfoScreen(
     val context = LocalContext.current
     var fullName by remember { mutableStateOf(profile.fullName) }
     var phone by remember { mutableStateOf(profile.phone) }
+    var affectedNumber by remember { mutableStateOf(profile.affectedNumber) }
     var email by remember { mutableStateOf(profile.email) }
     var city by remember { mutableStateOf(profile.addressCity) }
     var state by remember { mutableStateOf(profile.state) }
@@ -68,7 +69,13 @@ fun MyInfoScreen(
             SectionHeader("About you")
             Spacer(Modifier.height(12.dp))
             Field("Full name", fullName) { fullName = it }
-            Field("Phone number", phone) { phone = it }
+            Field("Contact phone (where officials reach you)", phone) { phone = it }
+            Field("Affected number (the line getting the calls)", affectedNumber) { affectedNumber = it }
+            Text(
+                "Leave \"Affected number\" blank if it's the same as your contact phone.",
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             Field("Email", email) { email = it }
             Field("City", city) { city = it }
             Field("State (2-letter, e.g. CA)", state) { state = it }
@@ -120,6 +127,7 @@ fun MyInfoScreen(
                     UserProfile(
                         fullName = fullName.trim(),
                         phone = phone.trim(),
+                        affectedNumber = affectedNumber.trim(),
                         email = email.trim(),
                         addressCity = city.trim(),
                         state = state.trim().uppercase(),

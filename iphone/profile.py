@@ -52,7 +52,8 @@ class Profile:
     """Everything the documents auto-fill from. Blank fields render as [PLACEHOLDER]."""
 
     full_name: str = ""
-    phone: str = ""
+    phone: str = ""                 # where police / FCC / the carrier should reach you
+    affected_number: str = ""       # the line actually receiving the harassing calls
     email: str = ""
     address_city: str = ""
     state: str = ""            # two-letter USPS code, e.g. "CA"
@@ -61,6 +62,11 @@ class Profile:
     fcc_complaint_number: str = ""
     police_case_number: str = ""
     carrier_case_number: str = ""
+
+    @property
+    def affected_line(self) -> str:
+        """The harassed number — falls back to the contact number when not set separately."""
+        return self.affected_number.strip() or self.phone.strip()
 
     @property
     def is_ready_for_documents(self) -> bool:

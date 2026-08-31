@@ -135,6 +135,28 @@ def _v(value: str, placeholder: str) -> str:
     return value if (value or "").strip() else f"[{placeholder}]"
 
 
+def _affected_line(profile) -> str:
+    """The harassed number. Falls back to the contact number when not set separately."""
+    return (getattr(profile, "affected_line", None)
+            or getattr(profile, "affected_number", "")
+            or getattr(profile, "phone", "") or "").strip()
+
+
+def _has_distinct_affected(profile) -> bool:
+    a = getattr(profile, "affected_number", "") or ""
+    return bool(a.strip()) and a.strip() != (getattr(profile, "phone", "") or "").strip()
+
+
+def _complainant_header(profile) -> list:
+    """The identity lines every document opens with: contact identity, then the
+    affected line the packet is about (always shown - it's the subject)."""
+    return [
+        Body(f"Complainant: {_v(getattr(profile, 'full_name', ''), 'YOUR FULL NAME')} - "
+             f"{_v(getattr(profile, 'phone', ''), 'YOUR PHONE')}"),
+        Body(f"Affected number (receiving the calls): {_v(_affected_line(profile), 'AFFECTED NUMBER')}"),
+    ]
+
+
 def _title_case(s: str) -> str:
     out = []
     for w in s.split(" "):
@@ -284,7 +306,12 @@ def _group_by_number(rows: list[CallRow]) -> dict[str, list[CallRow]]:
 # --------------------------------------------------------------------------- #
 #  Document builders (ported 1:1 from DocumentGenerator.kt)
 # --------------------------------------------------------------------------- #
-PACKET_CONTENTS = ["evidence_summary", "incident_timeline", "police_report", "fcc_complaint", "carrier_script"]
+# Order the reader should work through them: understand the case, then the steps
+# in the sequence they should be filed — carrier first (get a case #), then the
+# FCC, then police last (their cover note cross-references the other two numbers).
+# Individual PDFs are named "TraceWorthy_<n>_<slug>_<stamp>.pdf" so they sort into
+# this order in a folder and drop straight into an Acrobat "Combine Files".
+PACKET_CONTENTS = ["evidence_summary", "incident_timeline", "carrier_script", "fcc_complaint", "police_report"]
 
 DOC_DISPLAY_NAMES = {
     "evidence_packet": "Full evidence packet",
@@ -299,8 +326,20 @@ DOC_DISPLAY_NAMES = {
 def _fcc_complaint(profile, stats, rows, source_note=None) -> list:
     first, last = _date_range(rows)
     name = _v(profile.full_name, "YOUR FULL NAME")
-    phone = _v(profile.phone, "YOUR CELL NUMBER")
+    affected = _v(_affected_line(profile), "AFFECTED NUMBER")
+    contact = _v(getattr(profile, "phone", ""), "YOUR CONTACT NUMBER")
     x = stats_extras(rows)
+    cheat = [
+        Bullet(f"Your phone number (the line that was called): {affected}"),
+        Bullet("Phone issue: Unwanted calls"),
+        Bullet("Sub-issue: Caller ID Spoofing"),
+        Bullet("Did you give consent? No"),
+        Bullet(f"Caller's number: Multiple / spoofed - {stats.unique_numbers} different numbers (see description)"),
+        Bullet(f"Date(s) of calls: {first} through {last}"),
+        Bullet("Method: Phone call"),
+    ]
+    if _has_distinct_affected(profile):
+        cheat.append(Bullet(f"Best number to reach you: {contact}"))
     blocks: list = [
         Title("FCC Complaint - Caller ID Spoofing"),
         Body("File online at consumercomplaints.fcc.gov -> Phone -> Unwanted Calls -> issue type "
@@ -308,23 +347,18 @@ def _fcc_complaint(profile, stats, rows, source_note=None) -> list:
              "complaint's free-text box."),
         Gap(6),
         Heading("Form Field Cheat-Sheet"),
-        Bullet(f"Your phone number: {phone}"),
-        Bullet("Phone issue: Unwanted calls"),
-        Bullet("Sub-issue: Caller ID Spoofing"),
-        Bullet("Did you give consent? No"),
-        Bullet(f"Caller's number: Multiple / spoofed - {stats.unique_numbers} different numbers (see description)"),
-        Bullet(f"Date(s) of calls: {first} through {last}"),
-        Bullet("Method: Phone call"),
+        *cheat,
         Heading("Totals By Period"),
         Table(["Window", "Calls", "Flagged", "Numbers"],
               [[w.label, str(w.total), str(w.flagged), str(w.unique_numbers)] for w in x.windows]),
         Heading("Description (Paste This)"),
-        Body(f"I am receiving a sustained campaign of harassing phone calls to my cell phone, {phone}. "
+        Body(f"I am receiving a sustained campaign of harassing phone calls to my number, {affected}. "
              f"Over the period {first} to {last} I have logged {stats.total_calls} calls from "
              f"{stats.unique_numbers} distinct phone numbers. {_pattern_sentence(profile, stats)}"),
         Body("I did not consent to these calls. I am requesting FCC action against this illegal spoofing "
              "under the Truth in Caller ID Act and the TRACED Act."),
-        Body(f"Name: {name}"),
+        Body(f"Name: {name}"
+             + (f"    Best contact number: {contact}" if _has_distinct_affected(profile) else "")),
         Gap(10),
         Body(f"Generated by TraceWorthy on {_human(datetime.now())}."),
     ]
@@ -347,7 +381,7 @@ def _police_report(profile, stats, rows, source_note=None) -> list:
         Bullet(f"Date: {_human(datetime.now())}"),
         Bullet(f"Name: {_v(profile.full_name, 'YOUR FULL NAME')}"),
         Bullet(f"Contact: {_v(profile.phone, 'YOUR PHONE')} - {_v(profile.email, 'YOUR EMAIL')}"),
-        Bullet(f"Affected line: {_v(profile.phone, 'YOUR CELL NUMBER')}"),
+        Bullet(f"Affected line (receiving the calls): {_v(_affected_line(profile), 'AFFECTED NUMBER')}"),
         Bullet(f"Carrier: {_v(profile.carrier, 'YOUR CARRIER')}"),
         Bullet(f"Location: {_v(profile.address_city, 'CITY')}, {_v(profile.state, 'ST')}"),
         Heading("Nature Of Complaint"),
@@ -398,7 +432,8 @@ def _carrier_script(profile, stats, rows, source_note=None) -> list:
         Bullet("Case / reference number: ____________________  (save this in My info)"),
         Bullet("Representative name and date: ____________________"),
         Heading("Context To Give Them"),
-        Body(f"I have logged {stats.total_calls} calls from {stats.unique_numbers} different numbers, "
+        Body(f"The affected line on my account is {_v(_affected_line(profile), 'AFFECTED NUMBER')}. "
+             f"I have logged {stats.total_calls} calls from {stats.unique_numbers} different numbers, "
              f"{stats.flagged_calls} matching the harassment pattern. I am also filing an FCC complaint "
              "and a police report."),
         Gap(6),
@@ -415,7 +450,7 @@ def _incident_timeline(profile, stats, rows, source_note=None) -> list:
     )
     blocks: list = [
         Title("Harassment Incident Timeline"),
-        Body(f"Complainant: {_v(profile.full_name, 'YOUR FULL NAME')} - {_v(profile.phone, 'YOUR PHONE')}"),
+        *_complainant_header(profile),
         Body("This is a chronological log of documented incidents, compiled from notes taken at or near "
              "the time of each call. It is intended to show the pattern of contact and any escalation "
              "of the harassment over time."),
@@ -461,7 +496,7 @@ def _evidence_summary(profile, stats, rows, source_note=None) -> list:
     first, last = _date_range(rows)
     blocks: list = [
         Title("TraceWorthy - Evidence Summary"),
-        Body(f"Complainant: {_v(profile.full_name, 'YOUR FULL NAME')} - {_v(profile.phone, 'YOUR PHONE')}"),
+        *_complainant_header(profile),
         Body(f"Reporting period: {first} to {last}"),
         Body(f"Generated: {_human(datetime.now())}"),
     ]
@@ -511,12 +546,15 @@ def _evidence_packet(profile, stats, rows, source_note=None) -> list:
     first, last = _date_range(rows)
     blocks: list = [
         Title("TraceWorthy Evidence Packet"),
-        Body(f"Prepared by {_v(profile.full_name, 'YOUR FULL NAME')} - {_v(profile.phone, 'YOUR PHONE')}"),
+        Body(f"Prepared by {_v(getattr(profile, 'full_name', ''), 'YOUR FULL NAME')} - "
+             f"{_v(getattr(profile, 'phone', ''), 'YOUR PHONE')}"),
+        Body(f"Affected number (receiving the calls): {_v(_affected_line(profile), 'AFFECTED NUMBER')}"),
         Body(f"Reporting period: {first} to {last}"),
         Body(f"Generated: {_human(datetime.now())}"),
         Gap(6),
-        Body(f"This packet documents a campaign of harassing phone calls and is intended to support a "
-             f"carrier traceback. It contains {stats.total_calls} logged calls from {stats.unique_numbers} "
+        Body(f"This packet documents a campaign of harassing phone calls to "
+             f"{_v(_affected_line(profile), 'AFFECTED NUMBER')} and is intended to support a carrier "
+             f"traceback. It contains {stats.total_calls} logged calls from {stats.unique_numbers} "
              f"distinct numbers, {stats.flagged_calls} matching the harassment pattern. The full "
              "statistics and charts are on the evidence summary that follows."),
     ]
@@ -730,16 +768,19 @@ def generate_all(rows: list[CallRow], profile, out_dir: str, source_note: str | 
     stamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
     written: dict[str, str] = {}
 
-    for key, builder in _BUILDERS.items():
-        blocks = builder(profile, stats, rows, source_note)
-        path = os.path.join(out_dir, f"TraceWorthy_{key}_{stamp}.pdf")
-        _render_pdf(blocks, path, rows)
-        written[key] = path
-
+    # The bundled packet sorts first (00); the individual docs are numbered in the
+    # order the reader should work through them, so a folder listing / an Acrobat
+    # "Combine Files" already yields the right sequence.
     packet_blocks = _evidence_packet(profile, stats, rows, source_note)
-    packet_path = os.path.join(out_dir, f"TraceWorthy_evidence_packet_{stamp}.pdf")
+    packet_path = os.path.join(out_dir, f"TraceWorthy_00_evidence_packet_{stamp}.pdf")
     _render_pdf(packet_blocks, packet_path, rows)
     written["evidence_packet"] = packet_path
+
+    for i, key in enumerate(PACKET_CONTENTS, 1):
+        blocks = _BUILDERS[key](profile, stats, rows, source_note)
+        path = os.path.join(out_dir, f"TraceWorthy_{i:02d}_{key}_{stamp}.pdf")
+        _render_pdf(blocks, path, rows)
+        written[key] = path
 
     for kind, name in (("pie", "flagged_vs_normal"), ("top", "top_offenders"),
                        ("hour", "calls_by_hour"), ("day", "calls_per_day"),
@@ -755,8 +796,8 @@ class _JsonProfile:
     """Minimal duck-typed profile read straight from traceworthy_profile.json, so
     analysis/packet.py works for carrier users without the iphone/ package."""
 
-    _FIELDS = ("full_name", "phone", "email", "address_city", "state", "carrier",
-               "fcc_complaint_number", "police_case_number", "carrier_case_number")
+    _FIELDS = ("full_name", "phone", "affected_number", "email", "address_city", "state",
+               "carrier", "fcc_complaint_number", "police_case_number", "carrier_case_number")
 
     class _HT:
         def __init__(self, value):
@@ -769,6 +810,10 @@ class _JsonProfile:
         for f in self._FIELDS:
             setattr(self, f, str(data.get(f, "") or ""))
         self.harassment_type = self._HT(data.get("harassment_type"))
+
+    @property
+    def affected_line(self) -> str:
+        return self.affected_number.strip() or self.phone.strip()
 
     @classmethod
     def load(cls, path: str | None):

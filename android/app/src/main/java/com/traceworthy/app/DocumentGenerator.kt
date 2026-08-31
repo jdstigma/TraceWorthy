@@ -17,37 +17,49 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
-/** One document the app can produce, filled from the user's info + call stats. */
-enum class DocumentType(val displayName: String, val fileSlug: String, val blurb: String) {
+/**
+ * One document the app can produce, filled from the user's info + call stats.
+ * [seq] is the position in the evidence packet (0 = the bundle itself). Generated
+ * filenames carry it — "TraceWorthy_04_FCC_complaint_….pdf" — so the individual
+ * PDFs sort into filing order in a folder and drop straight into an Acrobat
+ * "Combine Files" without re-ordering.
+ */
+enum class DocumentType(val displayName: String, val fileSlug: String, val seq: Int, val blurb: String) {
     EvidencePacket(
         "Full evidence packet",
         "evidence_packet",
+        0,
         "Bundles every document below into one PDF with a cover page and index — hand this to police or the FCC.",
+    ),
+    EvidenceSummary(
+        "Evidence summary",
+        "evidence_summary",
+        1,
+        "One-page snapshot of your call statistics to attach to any filing.",
+    ),
+    IncidentTimeline(
+        "Incident timeline",
+        "incident_timeline",
+        2,
+        "Chronological log built from your dated notes — shows the pattern and any escalation.",
+    ),
+    CarrierScript(
+        "Carrier call script",
+        "carrier_script",
+        3,
+        "Word-for-word script for opening a documented harassment case with your carrier.",
     ),
     FccComplaint(
         "FCC complaint",
         "FCC_complaint",
+        4,
         "Federal record of the spoofing campaign. Paste the description into consumercomplaints.fcc.gov.",
     ),
     PoliceReport(
         "Harassment–police report cover note",
         "police_report",
+        5,
         "Cover note + talking points to hand police so they can subpoena your carrier.",
-    ),
-    CarrierScript(
-        "Carrier call script",
-        "carrier_script",
-        "Word-for-word script for opening a documented harassment case with your carrier.",
-    ),
-    IncidentTimeline(
-        "Incident timeline",
-        "incident_timeline",
-        "Chronological log built from your dated notes — shows the pattern and any escalation.",
-    ),
-    EvidenceSummary(
-        "Evidence summary",
-        "evidence_summary",
-        "One-page snapshot of your call statistics to attach to any filing.",
     ),
 }
 
@@ -199,13 +211,17 @@ object DocumentGenerator {
 
     data class Result(val uri: Uri?, val path: String)
 
+    /** Filename stem: seq-prefixed so the PDFs sort into filing order (see DocumentType). */
+    private fun fileStem(type: DocumentType): String =
+        "%02d_%s".format(type.seq, type.fileSlug)
+
     /** Build + render a document straight to PDF (no editing step). */
     fun generate(
         context: Context,
         type: DocumentType,
         profile: UserProfile,
         entries: List<CallEntry>,
-    ): Result = writePdf(context, type.fileSlug, buildDoc(context, type, profile, entries))
+    ): Result = writePdf(context, fileStem(type), buildDoc(context, type, profile, entries))
 
     /**
      * Build the document's blocks, wrapped so the UI can preview and edit the text
@@ -216,7 +232,7 @@ object DocumentGenerator {
         type: DocumentType,
         profile: UserProfile,
         entries: List<CallEntry>,
-    ): EditableDocument = EditableDocument(type.fileSlug, buildDoc(context, type, profile, entries))
+    ): EditableDocument = EditableDocument(fileStem(type), buildDoc(context, type, profile, entries))
 
     private fun buildDoc(
         context: Context,
@@ -594,13 +610,18 @@ object DocumentGenerator {
         DocumentType.EvidenceSummary -> evidenceSummary(profile, stats, entries, branches)
     }
 
-    /** The documents bundled into the packet, in the order officials should read them. */
+    /**
+     * The documents bundled into the packet, in the order the reader should work
+     * through them: understand the case, then file in sequence — carrier first (get
+     * a case #), then the FCC, then police last (their cover note cross-references
+     * the other two case numbers). Matches DocumentType.seq / the PC packet.
+     */
     private val PACKET_CONTENTS = listOf(
         DocumentType.EvidenceSummary,
         DocumentType.IncidentTimeline,
-        DocumentType.PoliceReport,
-        DocumentType.FccComplaint,
         DocumentType.CarrierScript,
+        DocumentType.FccComplaint,
+        DocumentType.PoliceReport,
     )
 
     private fun evidencePacket(profile: UserProfile, stats: CallStats, entries: List<CallEntry>, branches: Map<String, String>): List<Block> {
@@ -608,10 +629,11 @@ object DocumentGenerator {
         val blocks = mutableListOf<Block>(
             Block.Title("TraceWorthy Evidence Packet"),
             Block.Body("Prepared by ${v(profile.fullName, "YOUR FULL NAME")} · ${v(profile.phone, "YOUR PHONE")}"),
+            Block.Body("Affected number (receiving the calls): ${v(profile.affectedLine, "AFFECTED NUMBER")}"),
             Block.Body("Reporting period: $first to $last"),
             Block.Body("Generated: ${human.format(Date())}"),
             Block.Gap(6f),
-            Block.Body("This packet documents a campaign of harassing phone calls and is intended to support a carrier traceback. It contains ${stats.totalCalls} logged calls from ${stats.uniqueNumbers} distinct numbers, ${stats.flaggedCalls} matching the harassment pattern. The full statistics and charts are on the evidence summary that follows."),
+            Block.Body("This packet documents a campaign of harassing phone calls to ${v(profile.affectedLine, "AFFECTED NUMBER")} and is intended to support a carrier traceback. It contains ${stats.totalCalls} logged calls from ${stats.uniqueNumbers} distinct numbers, ${stats.flaggedCalls} matching the harassment pattern. The full statistics and charts are on the evidence summary that follows."),
         )
         blocks.add(Block.Heading("Contents"))
         PACKET_CONTENTS.forEachIndexed { i, t ->
@@ -627,13 +649,15 @@ object DocumentGenerator {
     private fun fccComplaint(profile: UserProfile, stats: CallStats, entries: List<CallEntry>): List<Block> {
         val (first, last) = dateRange(entries)
         val name = v(profile.fullName, "YOUR FULL NAME")
-        val phone = v(profile.phone, "YOUR CELL NUMBER")
+        val affected = v(profile.affectedLine, "AFFECTED NUMBER")
+        val contact = v(profile.phone, "YOUR CONTACT NUMBER")
+        val distinctAffected = profile.affectedNumber.isNotBlank() && profile.affectedNumber != profile.phone
         val blocks = mutableListOf<Block>(
             Block.Title("FCC Complaint — Caller ID Spoofing"),
             Block.Body("File online at consumercomplaints.fcc.gov → Phone → Unwanted Calls → issue type \"Caller ID Spoofing.\" Use the field notes below, then paste the description into the complaint's free-text box."),
             Block.Gap(6f),
             Block.Heading("Form Field Cheat-Sheet"),
-            Block.Bullet("Your phone number: $phone"),
+            Block.Bullet("Your phone number (the line that was called): $affected"),
             Block.Bullet("Phone issue: Unwanted calls"),
             Block.Bullet("Sub-issue: Caller ID Spoofing"),
             Block.Bullet("Did you give consent? No"),
@@ -641,6 +665,7 @@ object DocumentGenerator {
             Block.Bullet("Date(s) of calls: $first through $last"),
             Block.Bullet("Method: Phone call"),
         )
+        if (distinctAffected) blocks.add(Block.Bullet("Best number to reach you: $contact"))
         blocks.add(Block.Heading("Totals By Period"))
         blocks.add(
             Block.Table(
@@ -651,9 +676,9 @@ object DocumentGenerator {
             )
         )
         blocks.add(Block.Heading("Description (Paste This)"))
-        blocks.add(Block.Body("I am receiving a sustained campaign of harassing phone calls to my cell phone, $phone. Over the period $first to $last I have logged ${stats.totalCalls} calls from ${stats.uniqueNumbers} distinct phone numbers. ${patternSentence(profile, stats)}", editable = true))
+        blocks.add(Block.Body("I am receiving a sustained campaign of harassing phone calls to my number, $affected. Over the period $first to $last I have logged ${stats.totalCalls} calls from ${stats.uniqueNumbers} distinct phone numbers. ${patternSentence(profile, stats)}", editable = true))
         blocks.add(Block.Body("I did not consent to these calls. I am requesting FCC action against this illegal spoofing under the Truth in Caller ID Act and the TRACED Act."))
-        blocks.add(Block.Body("Name: $name"))
+        blocks.add(Block.Body("Name: $name" + if (distinctAffected) "    Best contact number: $contact" else ""))
         blocks.add(Block.Gap(10f))
         blocks.add(Block.Body("Generated by TraceWorthy on ${human.format(Date())}."))
         return blocks
@@ -669,7 +694,7 @@ object DocumentGenerator {
             Block.Bullet("Date: ${human.format(Date())}"),
             Block.Bullet("Name: ${v(profile.fullName, "YOUR FULL NAME")}"),
             Block.Bullet("Contact: ${v(profile.phone, "YOUR PHONE")} · ${v(profile.email, "YOUR EMAIL")}"),
-            Block.Bullet("Affected line: ${v(profile.phone, "YOUR CELL NUMBER")}"),
+            Block.Bullet("Affected line (receiving the calls): ${v(profile.affectedLine, "AFFECTED NUMBER")}"),
             Block.Bullet("Carrier: ${v(profile.carrier, "YOUR CARRIER")}"),
             Block.Bullet("Location: ${v(profile.addressCity, "CITY")}, ${v(profile.state, "ST")}"),
             Block.Heading("Nature Of Complaint"),
@@ -713,7 +738,7 @@ object DocumentGenerator {
             Block.Bullet("Case / reference number: ____________________  (save this in My info)"),
             Block.Bullet("Representative name and date: ____________________"),
             Block.Heading("Context To Give Them"),
-            Block.Body("I have logged ${stats.totalCalls} calls from ${stats.uniqueNumbers} different numbers, ${stats.flaggedCalls} matching the harassment pattern. I am also filing an FCC complaint and a police report."),
+            Block.Body("The affected line on my account is ${v(profile.affectedLine, "AFFECTED NUMBER")}. I have logged ${stats.totalCalls} calls from ${stats.uniqueNumbers} different numbers, ${stats.flaggedCalls} matching the harassment pattern. I am also filing an FCC complaint and a police report."),
         )
         blocks.add(Block.Gap(6f))
         blocks.add(Block.Body("Note: carrier tools block and document — they cannot reveal a spoofed caller to you directly. Only a police subpoena unmasks the origin."))
@@ -729,6 +754,7 @@ object DocumentGenerator {
         val blocks = mutableListOf<Block>(
             Block.Title("Harassment Incident Timeline"),
             Block.Body("Complainant: ${v(profile.fullName, "YOUR FULL NAME")} · ${v(profile.phone, "YOUR PHONE")}"),
+            Block.Body("Affected number (receiving the calls): ${v(profile.affectedLine, "AFFECTED NUMBER")}"),
             Block.Body("This is a chronological log of documented incidents, compiled from notes taken at or near the time of each call. It is intended to show the pattern of contact and any escalation of the harassment over time."),
             Block.Gap(4f),
         )
@@ -772,6 +798,7 @@ object DocumentGenerator {
         val blocks = mutableListOf<Block>(
             Block.Title("TraceWorthy — Evidence Summary"),
             Block.Body("Complainant: ${v(profile.fullName, "YOUR FULL NAME")} · ${v(profile.phone, "YOUR PHONE")}"),
+            Block.Body("Affected number (receiving the calls): ${v(profile.affectedLine, "AFFECTED NUMBER")}"),
             Block.Body("Reporting period: $first to $last"),
             Block.Body("Generated: ${human.format(Date())}"),
         )

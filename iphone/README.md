@@ -83,10 +83,15 @@ Android app's export, so `../analysis/analyze_calls.py` also reads it directly.
 
 ### Step 5 — Fill in your details and build the packet
 
-1. **My info** tab — your name, cell number, city/state, carrier, and any FCC /
-   police / carrier case numbers. **Save** (stored in `traceworthy_profile.json`).
-   Anything left blank shows as `[PLACEHOLDER]` in the documents.
-2. **Generate** tab — **Build full evidence packet**. PDFs land in `iphone_packet/`.
+1. **My info** tab — your name, **contact phone**, the **affected number** (the line
+   getting the calls — leave blank if it's the same as your contact phone),
+   city/state, carrier, and any FCC / police / carrier case numbers. **Save**
+   (stored in `traceworthy_profile.json`). Blank fields show as `[PLACEHOLDER]`.
+2. **Generate** tab — **Build full evidence packet**. PDFs land in `iphone_packet/`,
+   numbered in filing order: `01` evidence summary → `02` incident timeline →
+   `03` carrier script → `04` FCC complaint → `05` police report (`00` is the
+   pre-bundled packet). Drag the folder into Acrobat's *Combine Files* and they're
+   already in the right sequence.
 
 Command line:
 
@@ -101,12 +106,12 @@ python -m iphone.cli packet --csv iphone_calls.csv --profile traceworthy_profile
 | File | Purpose |
 |---|---|
 | `Documents\TraceWorthy\iphone_calls.csv` | The extracted call log (same format as the Android app's export) |
-| `TraceWorthy_evidence_summary_*.pdf` | One-page stats + charts to attach to any filing |
-| `TraceWorthy_incident_timeline_*.pdf` | Chronological log (from the notes added in Step 4) |
-| `TraceWorthy_police_report_*.pdf` | Cover note for police so they can subpoena the carrier |
-| `TraceWorthy_fcc_complaint_*.pdf` | Text to paste into consumercomplaints.fcc.gov |
-| `TraceWorthy_carrier_script_*.pdf` | Word-for-word script for your carrier's fraud desk |
-| `TraceWorthy_evidence_packet_*.pdf` | All of the above, bundled with a cover + index |
+| `TraceWorthy_00_evidence_packet_*.pdf` | All of the below, bundled with a cover + index |
+| `TraceWorthy_01_evidence_summary_*.pdf` | One-page stats + charts to attach to any filing |
+| `TraceWorthy_02_incident_timeline_*.pdf` | Chronological log (from the notes added in Step 4) |
+| `TraceWorthy_03_carrier_script_*.pdf` | Word-for-word script for your carrier's fraud desk |
+| `TraceWorthy_04_fcc_complaint_*.pdf` | Text to paste into consumercomplaints.fcc.gov |
+| `TraceWorthy_05_police_report_*.pdf` | Cover note for police so they can subpoena the carrier |
 
 ## Limits
 

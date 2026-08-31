@@ -21,7 +21,7 @@ are in the Done section below.
 | 2 | **Attorney trademark clearance** | Formal clearance / manual USPTO search for **TraceWorthy** before a public Play Store release. Final gate; do last. **External — a real-world legal action, not a code task.** | 💡 proposed (end — pre-release) |
 | 3 | **Call category tags** | Per-call or per-number category tags beyond severity: Spam, Political Campaign, Robocall, Telemarketer, Debt Collector, Scam/Fraud, Survey/Polling, Wrong Number, Personal/Known Harasser, Unknown. | 💡 proposed |
 | 4 | **Learn article: unmasking blocked/private calls** | TraceWorthy can't unmask *67/blocked calls itself (requires carrier-level PRI/SS7 access, not app-level). Add a Learn article documenting TrapCall-style conditional-call-forwarding services as a companion tool, and let the revealed number get fed into TraceWorthy's existing note/CSV pipeline. | 💡 proposed |
-| 5 | **Reorder Evidence Packet sections by real-world task sequence** | Packet section order (`DocumentGenerator.kt` ~L599-603) is currently EvidenceSummary → IncidentTimeline → PoliceReport → FccComplaint → CarrierScript. Reorder to match the sequence the user should actually approach/file these steps in, not the current arbitrary order. | 💡 proposed |
+| 5 | **Reorder Evidence Packet sections by real-world task sequence** | ~~Packet section order is currently EvidenceSummary → IncidentTimeline → PoliceReport → FccComplaint → CarrierScript.~~ **DONE** — new order Summary → Timeline → Carrier → FCC → Police (carrier first for a case #, police last so their cover note cross-references the FCC + carrier numbers). Applied to both the app (`DocumentType.seq` + `PACKET_CONTENTS`) and the PC packet (`analysis/packet.py`); individual PDFs now named `TraceWorthy_NN_<slug>_<stamp>.pdf` so a folder listing / Acrobat "Combine Files" is already in order. | ✅ done |
 | 6 | **In-app download link for the desktop companion** | Surface a link/button in the app (Learn or Home) pointing to the PC toolkit (TraceWorthy.exe / traceworthy_launcher.py) release download, so users discover the desktop companion without leaving the app. | 💡 proposed |
 | 7 | **Move Harassment Type off the profile, make it call-based** | `HarassmentType` (Silent/Aggressive/Both) is currently a single global field on `UserProfile`/My info. Remove it from My info and make it per-call instead, so each call/note can be tagged with its own harassment type rather than one setting applying to every call. | 💡 proposed |
 | 8 | **Incident Timeline: windowed views + slicer + tags-at-top** | Multi-part: (a) beyond user notes/tags, add 14/30/60/120-day windowed views to the Incident Timeline, each shown as its own tab on the timeline screen; (b) within a window, only surface numbers/entries with tagged count > 2; (c) add a slicer/filter (all calls / flagged / legitimate) that applies across the new windowed timeline views; (d) when the Incident Timeline doc is generated, if user tags/notes exist, list them at the top of the document. | 💡 proposed |
@@ -36,6 +36,14 @@ _(moved here when we pick them up)_
 ---
 
 ## Done
+
+- **Separate "affected number" from the contact number** — My info had one `phone`
+  field doing double duty; the harassed line and the contact line are often different
+  (e.g. a wiped/retired line vs. a current number). Added `affectedNumber` /
+  `affected_number` (blank = same as contact) with an `affectedLine` fallback, wired
+  through every document: police "Affected line", FCC "your phone number (the line
+  that was called)" + "best number to reach you", carrier context, and the
+  summary/timeline/packet headers. App + PC.
 
 - **iPhone route (`iphone/`)** — PC tool: read an encrypted iPhone backup →
   extract `CallHistory.storedata` → app-format CSV → full evidence packet. New

@@ -26,7 +26,8 @@ enum class HarassmentType(val label: String, val shortLabel: String) {
  */
 data class UserProfile(
     val fullName: String = "",
-    val phone: String = "",
+    val phone: String = "",          // where police / FCC / the carrier should reach you
+    val affectedNumber: String = "", // the line actually receiving the harassing calls
     val email: String = "",
     val addressCity: String = "",
     val state: String = "",          // two-letter USPS code, e.g. "CA"
@@ -36,6 +37,10 @@ data class UserProfile(
     val policeCaseNumber: String = "",
     val carrierCaseNumber: String = "",
 ) {
+    /** The harassed number — falls back to the contact number when not set separately. */
+    val affectedLine: String
+        get() = affectedNumber.ifBlank { phone }
+
     /** True once the minimum needed to fill a document is present. */
     val isReadyForDocuments: Boolean
         get() = fullName.isNotBlank() && phone.isNotBlank()
@@ -50,6 +55,7 @@ object ProfileStore {
         return UserProfile(
             fullName = p.getString("fullName", "") ?: "",
             phone = p.getString("phone", "") ?: "",
+            affectedNumber = p.getString("affectedNumber", "") ?: "",
             email = p.getString("email", "") ?: "",
             addressCity = p.getString("addressCity", "") ?: "",
             state = p.getString("state", "") ?: "",
@@ -67,6 +73,7 @@ object ProfileStore {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().apply {
             putString("fullName", profile.fullName)
             putString("phone", profile.phone)
+            putString("affectedNumber", profile.affectedNumber)
             putString("email", profile.email)
             putString("addressCity", profile.addressCity)
             putString("state", profile.state)

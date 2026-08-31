@@ -364,7 +364,7 @@ class App(tk.Tk):
         grid = ttk.Frame(f)
         grid.pack(fill="x", padx=14, pady=10)
 
-        def field(label, key, r, combo=None):
+        def field(label, key, r, combo=None, hint=None):
             ttk.Label(grid, text=label).grid(row=r, column=0, sticky="w", pady=4)
             var = tk.StringVar()
             self.vars[key] = var
@@ -373,21 +373,25 @@ class App(tk.Tk):
             else:
                 w = ttk.Entry(grid, textvariable=var, width=40)
             w.grid(row=r, column=1, sticky="w", padx=8)
+            if hint:
+                ttk.Label(grid, text=hint, foreground="#666").grid(row=r, column=2, sticky="w")
 
         field("Full name", "full_name", 0)
-        field("Phone (your cell)", "phone", 1)
-        field("Email", "email", 2)
-        field("City", "address_city", 3)
-        field("State", "state", 4, combo=STATES)
-        field("Carrier", "carrier", 5, combo=CARRIERS)
-        field("FCC complaint #", "fcc_complaint_number", 6)
-        field("Police case #", "police_case_number", 7)
-        field("Carrier case #", "carrier_case_number", 8)
+        field("Contact phone", "phone", 1, hint="where police / FCC / carrier reach you")
+        field("Affected number", "affected_number", 2,
+              hint="the line getting the harassing calls (blank = same as contact phone)")
+        field("Email", "email", 3)
+        field("City", "address_city", 4)
+        field("State", "state", 5, combo=STATES)
+        field("Carrier", "carrier", 6, combo=CARRIERS)
+        field("FCC complaint #", "fcc_complaint_number", 7)
+        field("Police case #", "police_case_number", 8)
+        field("Carrier case #", "carrier_case_number", 9)
 
-        ttk.Label(grid, text="Harassment type").grid(row=9, column=0, sticky="w", pady=6)
+        ttk.Label(grid, text="Harassment type").grid(row=10, column=0, sticky="w", pady=6)
         self.ht_var = tk.StringVar(value=HarassmentType.SILENT.value)
         htf = ttk.Frame(grid)
-        htf.grid(row=9, column=1, sticky="w", padx=8)
+        htf.grid(row=10, column=1, sticky="w", padx=8)
         for ht in HarassmentType:
             ttk.Radiobutton(htf, text=ht.label, value=ht.value, variable=self.ht_var).pack(anchor="w")
 
