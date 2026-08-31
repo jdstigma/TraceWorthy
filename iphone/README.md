@@ -115,10 +115,14 @@ python -m iphone.cli packet --csv iphone_calls.csv --profile traceworthy_profile
 
 ## Limits
 
-- **Retention.** `CallHistory.storedata` keeps only ~the last 1,000 calls. For a
-  months-long campaign, request full records from your carrier — see
+- **Retention.** `CallHistory.storedata` keeps only ~the last 1,000 calls, and it
+  can be empty entirely (device wiped/restored, or Call History synced to iCloud
+  and not cached locally). For a months-long campaign — or when the device history
+  is gone — the complete record is with your **carrier**. Full walkthrough for
+  pulling those records (self-service and by request, what to ask for, retention
+  and account-holder rules) is in
   [`../analysis/HOW_TO_GET_CALL_RECORDS.md`](../analysis/HOW_TO_GET_CALL_RECORDS.md).
-  Every generated document says this.
+  Then: `python ..\analysis\packet.py --csv carrier_records.csv --profile traceworthy_profile.json`.
 - **Cellular only by default.** FaceTime calls are excluded unless you ask for them.
 - **No unmasking.** Like the app, this documents calls; it cannot reveal who is
   really behind a spoofed number. Only a carrier traceback / police subpoena can.
@@ -130,7 +134,7 @@ python -m iphone.cli packet --csv iphone_calls.csv --profile traceworthy_profile
 | "Call history is not in this backup" | The backup is unencrypted. Redo Step 2 with **Encrypt local backup** ticked. |
 | "Wrong backup password" | Use the password set when encryption was turned on — not the iPhone passcode or Apple ID. |
 | "No iPhone backups found" | Make a backup first, then **Refresh**. Or **Browse…** to the folder that contains `Manifest.plist`. |
-| "…has no records (table … is empty)" | The device isn't keeping call history locally. On the iPhone, toggle **Settings → [name] → iCloud → Call History OFF**, wait a minute, make a **fresh encrypted backup**, and try again. Or use carrier records. |
+| "…has no records (table … is empty)" | The device isn't keeping call history locally (wiped/restored, or synced to iCloud). Try toggling **Settings → [name] → iCloud → Call History OFF**, wait a minute, make a **fresh encrypted backup**, and retry. If it's still empty, the history is gone from the phone — get it from your carrier ([`../analysis/HOW_TO_GET_CALL_RECORDS.md`](../analysis/HOW_TO_GET_CALL_RECORDS.md)). |
 | "All N records were filtered out (… FaceTime / third-party app)" | The backup only has FaceTime / app calls. Tick *"include FaceTime calls"* and/or *"include third-party app calls"* and extract again. |
 | Extract works but the count looks low | iOS keeps only ~the last 1,000 calls. Get the full history from your carrier. |
 | Encrypted backup, no password saved anywhere | Apple can't recover it. Turn encryption off and back on in the backup app to set a new one, then back up again. |

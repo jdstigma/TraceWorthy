@@ -273,14 +273,40 @@ object LearnContent {
                     listOf(
                         "Log in to your account portal and look for usage / call detail records (CDR), " +
                             "then download the CSV. Prepaid and MVNO accounts usually have this too.",
+                        "Set the date range as wide as it allows, and make sure INCOMING calls are " +
+                            "included — some portals default to outgoing only.",
                     )
                 ),
                 Section(
-                    "Certified records for a case",
+                    "Ask the carrier for the full records",
                     listOf(
-                        "For a police or legal matter, ask your carrier's fraud / harassment department " +
-                            "for certified call records. Those are the authoritative records law " +
-                            "enforcement relies on.",
+                        "On the harassment-case call (and in writing), ask specifically for: \"copies " +
+                            "of the incoming call detail records for my line, going back as far as you " +
+                            "retain them — the detailed billing statements, not the summary, as CSV or " +
+                            "Excel if possible.\" Note the rep's name and the date.",
+                        "The account holder has to request it — if the line is on a family or business " +
+                            "plan, whoever's name is on the account makes the request (carriers guard " +
+                            "this as CPNI).",
+                    )
+                ),
+                Section(
+                    "Act fast, and let police preserve it",
+                    listOf(
+                        "Carriers keep detailed records only about 12–24 months, sometimes less. Older " +
+                            "calls are already gone — request now.",
+                        "If you file a police report, police can send the carrier a preservation letter " +
+                            "to freeze the records and later subpoena more than you can get as a " +
+                            "customer. Filing the report protects the evidence.",
+                    )
+                ),
+                Section(
+                    "What the records will and won't show",
+                    listOf(
+                        "They show every call to your line with date, time, duration, and the caller ID " +
+                            "as delivered — which for a spoofed call is the fake number. They will not " +
+                            "reveal the true origin; only a traceback or subpoena can. That's fine — the " +
+                            "evidence is the pattern: the volume, the timing, and the pile of one-off " +
+                            "numbers.",
                     )
                 ),
             )
