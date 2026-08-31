@@ -53,9 +53,10 @@ Output:
 ```bash
 python packet.py --csv <call log CSV> --profile ..\traceworthy_profile.json --out packet
 ```
-`--profile` is optional — blank fields render as `[PLACEHOLDER]`. Writes the five
-documents (numbered `01`–`05` in filing order: summary → timeline → carrier → FCC →
-police) plus `TraceWorthy_00_evidence_packet_*.pdf` (all bundled, cover + index).
+`--profile` is optional — blank fields render as `[PLACEHOLDER]`. Writes the six
+documents (numbered `01`–`06` in filing order: summary → timeline → carrier → FCC →
+police → non-disclosure order request) plus `TraceWorthy_00_evidence_packet_*.pdf`
+(all bundled, cover + index).
 The numeric prefixes make a folder listing / an Acrobat *Combine Files* come out in
 order. The incident timeline is populated from the `Note` / `Severity` columns of
 the CSV (the Android app fills these; the `../iphone/` tool has a Notes tab for it).

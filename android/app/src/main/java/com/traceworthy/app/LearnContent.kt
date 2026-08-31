@@ -110,6 +110,41 @@ object LearnContent {
             )
         ),
         Article(
+            title = "Keep the subpoena secret",
+            summary = "Ask police to pair the carrier subpoena with a non-disclosure order.",
+            body = listOf(
+                Section(
+                    "The problem",
+                    listOf(
+                        "When police subpoena your carrier for records, the carrier's normal practice " +
+                            "is to notify the account holder. That would tip off the person calling you " +
+                            "before the records are secured — and spoofing services routinely delete " +
+                            "their logs, so a heads-up invites the evidence to vanish.",
+                    )
+                ),
+                Section(
+                    "The fix",
+                    listOf(
+                        "Under 18 U.S.C. section 2705(b), a prosecutor can ask the court for a " +
+                            "non-disclosure order that bars the carrier from telling the subscriber, " +
+                            "usually for 90 days and renewable. If bank records are also involved, " +
+                            "financial institutions have parallel rules.",
+                        "Only a prosecutor or court can obtain it — you can't. But you can put the " +
+                            "request and its basis on the record from day one.",
+                    )
+                ),
+                Section(
+                    "What to do",
+                    listOf(
+                        "Generate the \"Non-disclosure order request\" from the Documents screen and " +
+                            "hand it to your detective with your police report. It lays out the five " +
+                            "statutory grounds and flags which ones fit your case (threats, evidence " +
+                            "destruction, witness intimidation, jeopardizing the traceback).",
+                    )
+                ),
+            )
+        ),
+        Article(
             title = "Right after a harassing call",
             summary = "The one thing to do in the moment, plus what not to bother with.",
             body = listOf(
