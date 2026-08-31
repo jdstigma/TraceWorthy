@@ -291,9 +291,12 @@ def _pattern_sentence(profile, stats: CallStats) -> str:
                 "numbers not in my contacts, and a number of the calls additionally involve aggressive "
                 "or threatening conduct (documented with dates and times in the attached incident "
                 f"timeline). {spoof}")
-    return (f"{stats.flagged_calls} match a consistent harassment pattern: incoming calls from numbers "
-            "not in my contacts on which the caller is silent and/or disconnects within seconds. "
-            f"{spoof}")
+    if name == "Silent":
+        return (f"{stats.flagged_calls} match a consistent harassment pattern: incoming calls from "
+                "numbers not in my contacts on which the caller is silent and/or disconnects within "
+                f"seconds. {spoof}")
+    return (f"{stats.flagged_calls} match a harassment pattern: repeated unwanted incoming calls from "
+            f"numbers not in my contacts, many silent or lasting only seconds. {spoof}")
 
 
 def _group_by_number(rows: list[CallRow]) -> dict[str, list[CallRow]]:
