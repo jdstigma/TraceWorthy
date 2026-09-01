@@ -182,11 +182,15 @@ fun AnalysisScreen(entries: List<CallEntry>, onNotesChanged: () -> Unit) {
         NoteDialog(
             entry = entry,
             onDismiss = { editing = null },
-            onSave = { text, severity ->
+            onSave = { text, severity, markKnown ->
                 NotesStore.set(context, entry.id, text)
                 NotesStore.setSeverity(context, entry.id, severity)
+                if (markKnown != entry.isSafeListed) {
+                    if (markKnown) SafeNumberStore.add(context, entry.number)
+                    else SafeNumberStore.removeByNumber(context, entry.number)
+                }
                 editing = null
-                onNotesChanged() // reload so the new note rides along everywhere
+                onNotesChanged() // reload so the new note / known-caller flag rides along everywhere
             },
         )
     }

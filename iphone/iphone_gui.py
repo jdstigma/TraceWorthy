@@ -399,6 +399,14 @@ class App(tk.Tk):
         for ht in HarassmentType:
             ttk.Radiobutton(htf, text=ht.label, value=ht.value, variable=self.ht_var).pack(anchor="w")
 
+        ttk.Label(grid, text="Known callers").grid(row=11, column=0, sticky="nw", pady=6)
+        self.safe_text = tk.Text(grid, height=4, width=38, wrap="none")
+        self.safe_text.grid(row=11, column=1, sticky="w", padx=8)
+        ttk.Label(grid, text="one number per line — friends who call from a number\n"
+                             "you never saved; dropped from every figure, chart,\n"
+                             "list, and the CSV, with an all-incoming comparison",
+                  foreground="#666").grid(row=11, column=2, sticky="w")
+
         btns = ttk.Frame(f)
         btns.pack(fill="x", padx=14, pady=6)
         ttk.Button(btns, text="Save", command=self.save_profile).pack(side="left")
@@ -412,12 +420,16 @@ class App(tk.Tk):
         for k, var in self.vars.items():
             var.set(getattr(p, k, ""))
         self.ht_var.set(p.harassment_type.value)
+        self.safe_text.delete("1.0", "end")
+        self.safe_text.insert("1.0", "\n".join(p.safe_numbers))
         if not initial:
             self._log(f"Loaded profile from {os.path.abspath(PROFILE_PATH)}\n")
 
     def save_profile(self) -> Profile:
+        safe = [ln.strip() for ln in self.safe_text.get("1.0", "end").splitlines() if ln.strip()]
         p = Profile(
             harassment_type=HarassmentType.parse(self.ht_var.get()),
+            safe_numbers=safe,
             **{k: v.get().strip() for k, v in self.vars.items()},
         )
         path = p.save(PROFILE_PATH)

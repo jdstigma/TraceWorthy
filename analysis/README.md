@@ -61,4 +61,10 @@ The numeric prefixes make a folder listing / an Acrobat *Combine Files* come out
 order. The incident timeline is populated from the `Note` / `Severity` columns of
 the CSV (the Android app fills these; the `../iphone/` tool has a Notes tab for it).
 
+A `"safe_numbers"` list in the profile JSON (e.g. `["5551234567", "+1 555 987 6543"]`)
+marks **known callers** — friends or relatives on numbers you never saved to
+contacts. Their calls are dropped from every figure, chart, list, and the packet;
+the evidence summary reports how many were removed and shows an all-incoming vs.
+potential-harassment comparison table.
+
 Colors match the in-app charts, so the phone view and the report look consistent.

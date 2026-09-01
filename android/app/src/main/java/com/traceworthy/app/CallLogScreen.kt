@@ -48,14 +48,17 @@ import java.util.Locale
 fun CallLogScreen(
     entries: List<CallEntry>,
     onRefresh: () -> Unit,
+    onKnownCallersChanged: () -> Unit = {},
 ) {
     val context = LocalContext.current
     var editing by remember { mutableStateOf<CallEntry?>(null) }
 
     Column(Modifier.padding(16.dp).fillMaxSize()) {
         val suspicious = entries.count { it.isSuspicious }
+        val known = entries.count { it.isSafeListed }
         Text(
-            "${entries.size} calls logged · $suspicious flagged as suspicious",
+            "${entries.size} calls logged · $suspicious flagged as suspicious" +
+                if (known > 0) " · $known from known callers" else "",
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.onBackground,
         )
@@ -65,14 +68,15 @@ fun CallLogScreen(
             Spacer(Modifier.width(8.dp))
             OutlinedButton(
                 onClick = {
-                    val where = CsvExporter.export(context, entries)
+                    // Known callers are excluded from the evidence CSV, same as the documents.
+                    val where = CsvExporter.export(context, entries.filterNot { it.isSafeListed })
                     Toast.makeText(context, "Saved: $where", Toast.LENGTH_LONG).show()
                 },
                 shape = RoundedCornerShape(10.dp),
             ) { Text("Export CSV") }
         }
         Text(
-            "Tip: tap a call to add a note and tag how serious it was",
+            "Tip: tap a call to add a note, tag how serious it was, or mark the number a known caller",
             fontSize = 12.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 6.dp)
@@ -88,11 +92,16 @@ fun CallLogScreen(
         NoteDialog(
             entry = entry,
             onDismiss = { editing = null },
-            onSave = { text, severity ->
+            onSave = { text, severity, markKnown ->
                 NotesStore.set(context, entry.id, text)
                 NotesStore.setSeverity(context, entry.id, severity)
+                val knownChanged = markKnown != entry.isSafeListed
+                if (knownChanged) {
+                    if (markKnown) SafeNumberStore.add(context, entry.number)
+                    else SafeNumberStore.removeByNumber(context, entry.number)
+                }
                 editing = null
-                onRefresh() // reload so the note/tag show and ride along in the exports
+                if (knownChanged) onKnownCallersChanged() else onRefresh()
             }
         )
     }
@@ -103,10 +112,11 @@ fun CallLogScreen(
 fun NoteDialog(
     entry: CallEntry,
     onDismiss: () -> Unit,
-    onSave: (String, Severity) -> Unit,
+    onSave: (String, Severity, Boolean) -> Unit,
 ) {
     var text by remember { mutableStateOf(entry.note ?: "") }
     var severity by remember { mutableStateOf(entry.severity) }
+    var known by remember { mutableStateOf(entry.isSafeListed) }
     val who = entry.cachedName?.takeIf { it.isNotBlank() } ?: entry.number
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -133,9 +143,24 @@ fun NoteDialog(
                         )
                     }
                 }
+                if (!entry.isKnownContact) {
+                    Spacer(Modifier.height(12.dp))
+                    FilterChip(
+                        selected = known,
+                        onClick = { known = !known },
+                        label = { Text("Known caller (a friend, not harassment)") },
+                    )
+                    Text(
+                        "Excludes every call from this number from the flagged pattern, the " +
+                            "analysis, the CSV, and the documents. It still shows here in the log.",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                }
             }
         },
-        confirmButton = { TextButton(onClick = { onSave(text, severity) }) { Text("Save") } },
+        confirmButton = { TextButton(onClick = { onSave(text, severity, known) }) { Text("Save") } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
     )
 }
@@ -143,7 +168,11 @@ fun NoteDialog(
 @Composable
 private fun CallRow(entry: CallEntry, onClick: () -> Unit) {
     val fmt = remember { SimpleDateFormat("MMM d, HH:mm:ss", Locale.US) }
-    val bg = if (entry.isSuspicious) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surface
+    val bg = when {
+        entry.isSuspicious -> MaterialTheme.colorScheme.errorContainer
+        entry.isSafeListed -> MaterialTheme.colorScheme.surfaceVariant
+        else -> MaterialTheme.colorScheme.surface
+    }
     Column(
         Modifier
             .fillMaxWidth()
@@ -166,6 +195,9 @@ private fun CallRow(entry: CallEntry, onClick: () -> Unit) {
                 if (entry.isSuspicious) {
                     Spacer(Modifier.width(6.dp))
                     Text("⚠ flagged", color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
+                } else if (entry.isSafeListed) {
+                    Spacer(Modifier.width(6.dp))
+                    Text("✓ known caller", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                 }
             }
         }

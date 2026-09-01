@@ -105,7 +105,9 @@ fun DocumentsScreen(
             Spacer(Modifier.height(10.dp))
         }
 
-        val hasIncidents = entries.any { !it.note.isNullOrBlank() || it.severity != Severity.Unset }
+        val hasIncidents = entries.any {
+            !it.isSafeListed && (!it.note.isNullOrBlank() || it.severity != Severity.Unset)
+        }
         items(
             DocumentType.entries.filter {
                 it != DocumentType.EvidencePacket &&

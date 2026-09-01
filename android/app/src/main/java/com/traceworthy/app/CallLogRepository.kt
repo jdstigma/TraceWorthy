@@ -25,6 +25,7 @@ object CallLogRepository {
 
         val entries = mutableListOf<CallEntry>()
         val flagThreshold = SettingsStore.flagThresholdSeconds(context).toLong()
+        val safeKeys = SafeNumberStore.matchKeys(context)
 
         context.contentResolver.query(
             CallLog.Calls.CONTENT_URI,
@@ -43,9 +44,10 @@ object CallLogRepository {
             while (cursor.moveToNext()) {
                 val id = cursor.getLong(idxId)
                 val rawNumber = cursor.getString(idxNumber)
+                val number = if (rawNumber.isNullOrBlank()) "Unknown / withheld" else rawNumber
                 entries += CallEntry(
                     id = id,
-                    number = if (rawNumber.isNullOrBlank()) "Unknown / withheld" else rawNumber,
+                    number = number,
                     cachedName = cursor.getString(idxName),
                     timestampMillis = cursor.getLong(idxDate),
                     durationSeconds = cursor.getLong(idxDuration),
@@ -53,6 +55,7 @@ object CallLogRepository {
                     note = NotesStore.get(context, id),
                     severity = NotesStore.getSeverity(context, id),
                     flagThresholdSeconds = flagThreshold,
+                    isSafeListed = SafeNumberStore.key(number) in safeKeys,
                 )
             }
         }
