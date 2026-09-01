@@ -276,21 +276,23 @@ def _flagged_number_section(rows: list[CallRow]) -> list:
     return blocks
 
 
-def _pattern_sentence(profile, stats: CallStats) -> str:
+def _pattern_sentence(profile, stats: CallStats, rows: list[CallRow] | None = None) -> str:
     n = stats.unique_numbers
     spoof = (f"The use of {n} different numbers is consistent with deliberate caller ID "
              "spoofing to harass and evade blocking.")
     ht = getattr(profile, "harassment_type", None)
     name = getattr(ht, "value", "Silent")
+    timeline = _has_incidents(rows) if rows else False
     if name == "Aggressive":
+        tl = (" Specific incidents, with dates and times, are documented in the attached incident "
+              "timeline." if timeline else "")
         return (f"{stats.flagged_calls} of these calls involve aggressive, abusive, or threatening "
-                "conduct by the caller. Specific incidents, with dates and times, are documented in "
-                f"the attached incident timeline. {spoof}")
+                f"conduct by the caller.{tl} {spoof}")
     if name == "Both":
+        tl = (" (documented with dates and times in the attached incident timeline)" if timeline else "")
         return (f"{stats.flagged_calls} match a harassment pattern of silent or very short calls from "
                 "numbers not in my contacts, and a number of the calls additionally involve aggressive "
-                "or threatening conduct (documented with dates and times in the attached incident "
-                f"timeline). {spoof}")
+                f"or threatening conduct{tl}. {spoof}")
     if name == "Silent":
         return (f"{stats.flagged_calls} match a consistent harassment pattern: incoming calls from "
                 "numbers not in my contacts on which the caller is silent and/or disconnects within "
@@ -304,6 +306,11 @@ def _group_by_number(rows: list[CallRow]) -> dict[str, list[CallRow]]:
     for r in rows:
         out.setdefault(r.number, []).append(r)
     return out
+
+
+def _has_incidents(rows: list[CallRow]) -> bool:
+    """True once at least one call carries a note or a severity tag."""
+    return any(r.note or r.severity for r in rows)
 
 
 def _generated_footer() -> "Body":
@@ -341,6 +348,16 @@ def _spoofing_explainer() -> list:
 # this order in a folder and drop straight into an Acrobat "Combine Files".
 PACKET_CONTENTS = ["evidence_summary", "incident_timeline", "carrier_script", "fcc_complaint",
                    "police_report", "non_disclosure_order"]
+
+def _packet_contents(rows: list[CallRow]) -> list[str]:
+    """The packet's document list for this call log. The incident timeline is only
+    included once at least one call has been annotated with a note or severity -
+    an empty timeline is just a page telling the reader to add notes."""
+    keys = list(PACKET_CONTENTS)
+    if not _has_incidents(rows):
+        keys = [k for k in keys if k != "incident_timeline"]
+    return keys
+
 
 DOC_DISPLAY_NAMES = {
     "evidence_packet": "Full evidence packet",
@@ -384,7 +401,7 @@ def _fcc_complaint(profile, stats, rows, source_note=None) -> list:
         Heading("Description (Paste This)"),
         Body(f"I am receiving a sustained campaign of harassing phone calls to my number, {affected}. "
              f"Over the period {first} to {last} I have logged {stats.total_calls} calls from "
-             f"{stats.unique_numbers} distinct phone numbers. {_pattern_sentence(profile, stats)}"),
+             f"{stats.unique_numbers} distinct phone numbers. {_pattern_sentence(profile, stats, rows)}"),
         Body("I did not consent to these calls. I am requesting FCC action against this illegal spoofing "
              "under the Truth in Caller ID Act and the TRACED Act."),
         Body(f"Name: {name}"
@@ -420,13 +437,12 @@ def _police_report(profile, stats, rows, source_note=None) -> list:
              else "Ongoing telephone harassment via spoofed caller ID."),
         Heading("Summary Of Evidence"),
         Body(f"Over the period {first} to {last} I have logged {stats.total_calls} calls from "
-             f"{stats.unique_numbers} distinct phone numbers. {_pattern_sentence(profile, stats)}"),
-        Heading("Flagged Vs Normal"),
-        Pie(stats.flagged_calls, max(stats.total_calls - stats.flagged_calls, 0)),
-        Body("Full call statistics, the time-window breakdown, charts, and a per-number list are in the "
-             "attached TraceWorthy evidence summary."),
+             f"{stats.unique_numbers} distinct phone numbers. {_pattern_sentence(profile, stats, rows)}"),
+        Body("The full call statistics - the flagged-vs-normal breakdown, the time-window totals, the "
+             "charts, and the per-number list - are in the attached TraceWorthy evidence summary, with "
+             "every call itemized in the accompanying CSV."),
     ]
-    if aggressive:
+    if aggressive and _has_incidents(rows):
         blocks.append(Body("Specific threatening/abusive incidents are itemized in the attached "
                            "TraceWorthy incident timeline, compiled from notes taken at the time of each call."))
     blocks += [
@@ -450,8 +466,10 @@ def _police_report(profile, stats, rows, source_note=None) -> list:
 def _non_disclosure_order(profile, stats, rows, source_note=None) -> list:
     first, last = _date_range(rows)
     aggressive = getattr(getattr(profile, "harassment_type", None), "includes_aggressive", False)
-    life = "  - APPLIES: the caller has made threatening/abusive statements, documented with dates and " \
-           "times in the attached incident timeline." if aggressive else "."
+    timeline = aggressive and _has_incidents(rows)
+    life = ("  - APPLIES: the caller has made threatening/abusive statements"
+            + (", documented with dates and times in the attached incident timeline." if timeline
+               else ".")) if aggressive else "."
     witness = "  - APPLIES: I am the complainant and a witness, and the caller has already engaged in " \
               "intimidating conduct." if aggressive else "."
     return [
@@ -599,13 +617,7 @@ def _evidence_summary(profile, stats, rows, source_note=None) -> list:
         Pie(stats.flagged_calls, max(stats.total_calls - stats.flagged_calls, 0)),
         Heading("Top Numbers By Call Count"),
         BarChart([ChartBar(_trunc(n.name or n.number), n.total_count, n.flagged_count > 0)
-                  for n in stats.per_number[:6]]),
-    ]
-    for n in stats.per_number[:10]:
-        nm = n.name or n.number
-        flag = f" - {n.flagged_count} flagged" if n.flagged_count > 0 else ""
-        blocks.append(Bullet(f"{nm}: {n.total_count} calls{flag}"))
-    blocks += [
+                  for n in stats.per_number[:8]]),
         Heading("Calls Over Time - Last 90 Days (Date x Time Of Day)"),
         Scatter(),
         Body("Each dot is a call - the horizontal position is the date and the vertical position "
@@ -648,8 +660,9 @@ def _evidence_packet(profile, stats, rows, source_note=None) -> list:
     ]
     if source_note:
         blocks.append(Body(source_note))
+    contents = _packet_contents(rows)
     blocks.append(Heading("Contents"))
-    for i, key in enumerate(PACKET_CONTENTS, 1):
+    for i, key in enumerate(contents, 1):
         blocks.append(Bullet(f"{i}.  {DOC_DISPLAY_NAMES[key]}"))
     blocks += [
         Heading("How To Use This Packet"),
@@ -665,7 +678,7 @@ def _evidence_packet(profile, stats, rows, source_note=None) -> list:
     blocks.append(PageBreak())
     blocks.append(Heading("Background: How Caller ID Spoofing Works"))
     blocks += _spoofing_explainer()[1:]  # drop the duplicate heading
-    for key in PACKET_CONTENTS:
+    for key in contents:
         blocks.append(PageBreak())
         blocks += _BUILDERS[key](profile, stats, rows, source_note)
     return blocks
@@ -683,7 +696,7 @@ def _rows_to_df(rows: list[CallRow]) -> pd.DataFrame:
     })
 
 
-def _chart_png(kind: str, rows: list[CallRow], path: str) -> str | None:
+def _chart_png(kind: str, rows: list[CallRow], path: str, titled: bool = False) -> str | None:
     if draw_pie is None:
         return None
     df = _rows_to_df(rows)
@@ -700,6 +713,8 @@ def _chart_png(kind: str, rows: list[CallRow], path: str) -> str | None:
     except Exception:  # noqa: BLE001
         plt.close(fig)
         return None
+    if not titled:
+        ax.set_title("")  # the packet's section Heading already labels the chart
     fig.tight_layout()
     fig.savefig(path)
     plt.close(fig)
@@ -894,7 +909,7 @@ def generate_all(rows: list[CallRow], profile, out_dir: str, source_note: str | 
     _render_pdf(packet_blocks, packet_path, rows)
     written["evidence_packet"] = packet_path
 
-    for i, key in enumerate(PACKET_CONTENTS, 1):
+    for i, key in enumerate(_packet_contents(rows), 1):
         blocks = _BUILDERS[key](profile, stats, rows, source_note)
         path = os.path.join(out_dir, f"TraceWorthy_{i:02d}_{key}_{stamp}.pdf")
         _render_pdf(blocks, path, rows)
@@ -903,7 +918,7 @@ def generate_all(rows: list[CallRow], profile, out_dir: str, source_note: str | 
     for kind, name in (("pie", "flagged_vs_normal"), ("top", "top_offenders"),
                        ("hour", "calls_by_hour"), ("day", "calls_per_day"),
                        ("over", "calls_over_time")):
-        p = _chart_png(kind, rows, os.path.join(out_dir, f"{name}.png"))
+        p = _chart_png(kind, rows, os.path.join(out_dir, f"{name}.png"), titled=True)
         if p:
             written[f"chart_{name}"] = p
 

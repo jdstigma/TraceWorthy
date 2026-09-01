@@ -614,15 +614,24 @@ object DocumentGenerator {
         return blocks
     }
 
+    /** True once at least one call has been annotated with a note or a severity tag. */
+    private fun hasDocumentedIncidents(entries: List<CallEntry>): Boolean =
+        entries.any { !it.note.isNullOrBlank() || it.severity != Severity.Unset }
+
     /** Wording that adapts to the kind of harassment being reported. */
-    private fun patternSentence(profile: UserProfile, stats: CallStats): String {
+    private fun patternSentence(profile: UserProfile, stats: CallStats, entries: List<CallEntry>): String {
         val n = stats.uniqueNumbers
         val spoof = "The use of $n different numbers is consistent with deliberate caller ID spoofing to harass and evade blocking."
+        val timeline = hasDocumentedIncidents(entries)
         return when (profile.harassmentType) {
-            HarassmentType.Aggressive ->
-                "${stats.flaggedCalls} of these calls involve aggressive, abusive, or threatening conduct by the caller. Specific incidents, with dates and times, are documented in the attached incident timeline. $spoof"
-            HarassmentType.Both ->
-                "${stats.flaggedCalls} match a harassment pattern of silent or very short calls from numbers not in my contacts, and a number of the calls additionally involve aggressive or threatening conduct (documented with dates and times in the attached incident timeline). $spoof"
+            HarassmentType.Aggressive -> {
+                val tl = if (timeline) " Specific incidents, with dates and times, are documented in the attached incident timeline." else ""
+                "${stats.flaggedCalls} of these calls involve aggressive, abusive, or threatening conduct by the caller.$tl $spoof"
+            }
+            HarassmentType.Both -> {
+                val tl = if (timeline) " (documented with dates and times in the attached incident timeline)" else ""
+                "${stats.flaggedCalls} match a harassment pattern of silent or very short calls from numbers not in my contacts, and a number of the calls additionally involve aggressive or threatening conduct$tl. $spoof"
+            }
             HarassmentType.Silent ->
                 "${stats.flaggedCalls} match a consistent harassment pattern: incoming calls from numbers not in my contacts on which the caller is silent and/or disconnects within seconds. $spoof"
             HarassmentType.Unspecified ->
@@ -663,6 +672,15 @@ object DocumentGenerator {
         DocumentType.NonDisclosureOrder,
     )
 
+    /**
+     * The packet's document list for this call log. The incident timeline is only
+     * bundled once at least one call carries a note or severity — an empty timeline
+     * is just a page telling the reader to add notes.
+     */
+    private fun packetContents(entries: List<CallEntry>): List<DocumentType> =
+        if (hasDocumentedIncidents(entries)) PACKET_CONTENTS
+        else PACKET_CONTENTS.filter { it != DocumentType.IncidentTimeline }
+
     private fun evidencePacket(profile: UserProfile, stats: CallStats, entries: List<CallEntry>, branches: Map<String, String>): List<Block> {
         val (first, last) = dateRange(entries)
         val blocks = mutableListOf<Block>(
@@ -674,8 +692,9 @@ object DocumentGenerator {
             Block.Gap(6f),
             Block.Body("This packet documents a campaign of harassing phone calls to ${v(profile.affectedLine, "AFFECTED NUMBER")} and is intended to support a carrier traceback. It contains ${stats.totalCalls} logged calls from ${stats.uniqueNumbers} distinct numbers, ${stats.flaggedCalls} matching the harassment pattern. The full statistics and charts are on the evidence summary that follows."),
         )
+        val contents = packetContents(entries)
         blocks.add(Block.Heading("Contents"))
-        PACKET_CONTENTS.forEachIndexed { i, t ->
+        contents.forEachIndexed { i, t ->
             blocks.add(Block.Bullet("${i + 1}.  ${t.displayName}"))
         }
         blocks.add(Block.Heading("How To Use This Packet"))
@@ -686,7 +705,7 @@ object DocumentGenerator {
         blocks.add(Block.PageBreak)
         blocks.add(Block.Heading("Background: How Caller ID Spoofing Works"))
         blocks.addAll(spoofingExplainer().drop(1))  // drop the duplicate heading
-        PACKET_CONTENTS.forEach { t ->
+        contents.forEach { t ->
             blocks.add(Block.PageBreak)
             blocks.addAll(buildBlocks(t, profile, stats, entries, branches))
         }
@@ -723,7 +742,7 @@ object DocumentGenerator {
             )
         )
         blocks.add(Block.Heading("Description (Paste This)"))
-        blocks.add(Block.Body("I am receiving a sustained campaign of harassing phone calls to my number, $affected. Over the period $first to $last I have logged ${stats.totalCalls} calls from ${stats.uniqueNumbers} distinct phone numbers. ${patternSentence(profile, stats)}", editable = true))
+        blocks.add(Block.Body("I am receiving a sustained campaign of harassing phone calls to my number, $affected. Over the period $first to $last I have logged ${stats.totalCalls} calls from ${stats.uniqueNumbers} distinct phone numbers. ${patternSentence(profile, stats, entries)}", editable = true))
         blocks.add(Block.Body("I did not consent to these calls. I am requesting FCC action against this illegal spoofing under the Truth in Caller ID Act and the TRACED Act."))
         blocks.add(Block.Body("Name: $name" + if (distinctAffected) "    Best contact number: $contact" else ""))
         blocks.add(Block.Gap(10f))
@@ -752,12 +771,10 @@ object DocumentGenerator {
                     "Ongoing telephone harassment via spoofed caller ID."
             ),
             Block.Heading("Summary Of Evidence"),
-            Block.Body("Over the period $first to $last I have logged ${stats.totalCalls} calls from ${stats.uniqueNumbers} distinct phone numbers. ${patternSentence(profile, stats)}", editable = true),
+            Block.Body("Over the period $first to $last I have logged ${stats.totalCalls} calls from ${stats.uniqueNumbers} distinct phone numbers. ${patternSentence(profile, stats, entries)}", editable = true),
         )
-        blocks.add(Block.Heading("Flagged Vs Normal"))
-        blocks.add(Block.Pie(stats.flaggedCalls, (stats.totalCalls - stats.flaggedCalls).coerceAtLeast(0)))
-        blocks.add(Block.Body("Full call statistics, the time-window breakdown, charts, and a per-number list are in the attached TraceWorthy evidence summary."))
-        if (profile.harassmentType.includesAggressive) {
+        blocks.add(Block.Body("The full call statistics — the flagged-vs-normal breakdown, the time-window totals, the charts, and the per-number list — are in the attached TraceWorthy evidence summary, with every call itemized in the accompanying CSV."))
+        if (profile.harassmentType.includesAggressive && hasDocumentedIncidents(entries)) {
             blocks.add(Block.Body("Specific threatening/abusive incidents are itemized in the attached TraceWorthy incident timeline, compiled from notes taken at the time of each call."))
         }
         blocks.add(Block.Heading("Cross-References"))
@@ -780,6 +797,7 @@ object DocumentGenerator {
     private fun nonDisclosureOrder(profile: UserProfile, entries: List<CallEntry>): List<Block> {
         val (first, last) = dateRange(entries)
         val aggressive = profile.harassmentType.includesAggressive
+        val timeline = aggressive && hasDocumentedIncidents(entries)
         val blocks = mutableListOf<Block>(
             Block.Title("Request for a Non-Disclosure Order"),
             Block.Body("For the investigating officer / prosecutor. This accompanies my police report and TraceWorthy evidence packet."),
@@ -791,7 +809,7 @@ object DocumentGenerator {
             Block.Body("That any subpoena, § 2703(d) order, or search warrant issued to my carrier for records relating to the calls to my number, ${v(profile.affectedLine, "AFFECTED NUMBER")}, over the period $first to $last be accompanied by a § 2705(b) non-disclosure order barring the carrier from notifying the subscriber(s) whose records are produced.", editable = true),
             Block.Heading("Statutory Grounds (§ 2705(b))"),
             Block.Body("A court may issue the order on a finding that notification would result in one or more of the following. The grounds most applicable here are noted."),
-            Block.Bullet("Endangering the life or physical safety of an individual" + if (aggressive) "  — APPLIES: the caller has made threatening/abusive statements, documented with dates and times in the attached incident timeline." else "."),
+            Block.Bullet("Endangering the life or physical safety of an individual" + if (aggressive) "  — APPLIES: the caller has made threatening/abusive statements" + (if (timeline) ", documented with dates and times in the attached incident timeline." else ".") else "."),
             Block.Bullet("Flight from prosecution."),
             Block.Bullet("Destruction of or tampering with evidence  — APPLIES: spoofing-service and intermediate-carrier call logs are short-lived and are routinely deleted; advance notice invites their destruction."),
             Block.Bullet("Intimidation of potential witnesses" + if (aggressive) "  — APPLIES: I am the complainant and a witness, and the caller has already engaged in intimidating conduct." else "."),
@@ -897,15 +915,10 @@ object DocumentGenerator {
         blocks.add(Block.Heading("Flagged Vs Normal"))
         blocks.add(Block.Pie(stats.flaggedCalls, (stats.totalCalls - stats.flaggedCalls).coerceAtLeast(0)))
         blocks.add(Block.Heading("Top Numbers By Call Count"))
-        val topBars = stats.perNumber.take(6).map { n ->
+        val topBars = stats.perNumber.take(8).map { n ->
             ChartBar(trunc(n.name?.takeIf { it.isNotBlank() } ?: n.number), n.totalCount, n.flaggedCount > 0)
         }
         if (topBars.isNotEmpty()) blocks.add(Block.BarChart(topBars))
-        stats.perNumber.take(10).forEach { n ->
-            val nm = n.name?.takeIf { it.isNotBlank() } ?: n.number
-            val flag = if (n.flaggedCount > 0) " — ${n.flaggedCount} flagged" else ""
-            blocks.add(Block.Bullet("$nm: ${n.totalCount} calls$flag"))
-        }
         val scEntries = ScatterColors.last90Days(entries)
         val scTop5 = ScatterColors.top5Numbers(scEntries)
         val scNums = scTop5.map { it.first }
