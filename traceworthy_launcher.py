@@ -168,8 +168,8 @@ class Launcher(tk.Tk):
             prof = packet._JsonProfile.load(profile_path)
             written = packet.generate_all(rows, prof, out)
             print(f"{len(rows)} calls  ->  {out}")
-            for name, p in written.items():
-                print(f"  {os.path.basename(p)}")
+            print(f"  {os.path.basename(written['evidence_packet'])}  <- the complete packet; hand this over")
+            print("  parts/  <- each document on its own + the charts (use if you need one alone)")
 
         self._run_callable(build, "Building full evidence packet…")
 

@@ -985,6 +985,15 @@ def generate_all(rows: list[CallRow], profile, out_dir: str, source_note: str | 
     """Write every document + the bundled packet + the standalone chart PNGs.
     Returns {name: path}."""
     os.makedirs(out_dir, exist_ok=True)
+    # The one file to hand over is the complete packet, at the top of out_dir.
+    # Every individual document is *also* inside that packet, so the standalone
+    # copies + the charts go in a parts/ subfolder — that way nothing in out_dir
+    # itself repeats a page, and "print / combine / email the folder" just works.
+    # Use parts/ when you need one document alone (e.g. to paste the FCC text
+    # into the web form).
+    parts_dir = os.path.join(out_dir, "parts")
+    os.makedirs(parts_dir, exist_ok=True)
+
     # Known callers (friends on unsaved numbers, from profile.safe_numbers) are
     # set aside from every figure, chart, and list; the evidence summary reports
     # how many were set aside and how many incoming calls the analysis covers.
@@ -993,27 +1002,25 @@ def generate_all(rows: list[CallRow], profile, out_dir: str, source_note: str | 
     stamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
     written: dict[str, str] = {}
 
-    # The bundled packet sorts first (00); the individual docs are numbered in the
-    # order the reader should work through them, so a folder listing / an Acrobat
-    # "Combine Files" already yields the right sequence.
     packet_blocks = _evidence_packet(profile, stats, rows, source_note, excluded_known)
-    packet_path = os.path.join(out_dir, f"TraceWorthy_00_evidence_packet_{stamp}.pdf")
+    packet_path = os.path.join(out_dir, f"TraceWorthy_evidence_packet_{stamp}.pdf")
     _render_pdf(packet_blocks, packet_path, rows)
     written["evidence_packet"] = packet_path
 
+    # Individual docs, numbered in filing order so parts/ still combines cleanly.
     for i, key in enumerate(_packet_contents(rows), 1):
         if key == "evidence_summary":
             blocks = _evidence_summary(profile, stats, rows, source_note, excluded_known)
         else:
             blocks = _BUILDERS[key](profile, stats, rows, source_note)
-        path = os.path.join(out_dir, f"TraceWorthy_{i:02d}_{key}_{stamp}.pdf")
+        path = os.path.join(parts_dir, f"{i:02d}_{key}_{stamp}.pdf")
         _render_pdf(blocks, path, rows)
         written[key] = path
 
     for kind, name in (("pie", "flagged_vs_normal"), ("top", "top_offenders"),
                        ("hour", "calls_by_hour"), ("day", "calls_per_day"),
                        ("over", "calls_over_time")):
-        p = _chart_png(kind, rows, os.path.join(out_dir, f"{name}.png"), titled=True)
+        p = _chart_png(kind, rows, os.path.join(parts_dir, f"{name}.png"), titled=True)
         if p:
             written[f"chart_{name}"] = p
 

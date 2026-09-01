@@ -148,8 +148,10 @@ def cmd_packet(args):
     profile = packet._JsonProfile.load(args.profile)
     written = packet.generate_all(rows, profile, args.out, IPHONE_SOURCE_NOTE)
     print(f"{len(rows)} calls -> {os.path.abspath(args.out)}")
+    print(f"  {os.path.relpath(written['evidence_packet'], args.out)}  <- the complete packet; hand this over")
     for name, path in written.items():
-        print(f"  {name}: {os.path.basename(path)}")
+        if name != "evidence_packet":
+            print(f"  {os.path.relpath(path, args.out)}")
 
 
 # --------------------------------------------------------------------------- #
