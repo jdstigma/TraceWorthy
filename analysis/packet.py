@@ -315,25 +315,19 @@ def _spoofing_explainer() -> list:
     """Factual, non-editable background for the reader of the packet (police, FCC, carrier)."""
     return [
         Heading("How Caller ID Spoofing Works"),
-        Body("Caller ID spoofing is making a phone display a number other than the one actually "
-             "placing the call. It is cheap and trivial: apps and web services let anyone enter any "
-             "number as their outbound caller ID. The number shown to the recipient is chosen by the "
-             "caller and is not verified by the network at the point the call is received."),
-        Body("Targeted harassment (this case): a single person places repeated calls and changes the "
-             "displayed number on each one - often to a new, never-reused number - specifically to "
-             "defeat call blocking and stay anonymous. A long list of numbers that each called only "
-             "once or twice is a signature of one spoofing caller, not evidence of many callers."),
-        Body("Mass campaigns: the same technique is used at scale by robocall and scam operations, "
-             "which cycle through thousands of spoofed numbers - frequently ones sharing the "
-             "recipient's area code and prefix (\"neighbor spoofing\") to raise answer rates. High "
-             "volume from many distinct numbers over a short period indicates automated dialing."),
-        Body("Who can unmask it: neither the recipient nor a carrier's consumer tools can determine "
-             "the true originating line. That requires a STIR/SHAKEN traceback coordinated through the "
-             "Industry Traceback Group, or a subpoena / court order compelling the carriers in the "
-             "call path to produce their routing records. Spoofing caller ID to defraud, cause harm, "
-             "or wrongfully obtain value is prohibited by the federal Truth in Caller ID Act "
-             "(47 U.S.C. section 227(e)); the TRACED Act (2019) mandates STIR/SHAKEN deployment and "
-             "strengthens enforcement."),
+        Body("Caller ID spoofing makes a phone display a number other than the real one. It is cheap "
+             "and trivial - apps and websites let anyone set any number as their outbound caller ID, "
+             "and the network does not verify it at the point of the call."),
+        Body("A harasser who changes the displayed number on every call - often a new, never-reused "
+             "number each time - does so to defeat blocking and stay anonymous. A long list of numbers "
+             "that each called only once or twice is the signature of one spoofing caller, not many "
+             "callers. The same method is used at scale by robocall operations, frequently "
+             "\"neighbor spoofing\" the recipient's own area code."),
+        Body("Neither the recipient nor consumer-grade carrier tools can identify the true originating "
+             "line. That takes a STIR/SHAKEN traceback through the Industry Traceback Group, or a "
+             "subpoena to the carriers in the call path. Spoofing to defraud or cause harm violates "
+             "the federal Truth in Caller ID Act (47 U.S.C. section 227(e)); the 2019 TRACED Act "
+             "strengthened enforcement and mandated STIR/SHAKEN."),
     ]
 
 
@@ -621,8 +615,6 @@ def _evidence_summary(profile, stats, rows, source_note=None) -> list:
     ]
     blocks += _flagged_number_section(rows)
     blocks.append(Gap(6))
-    blocks += _spoofing_explainer()
-    blocks.append(Gap(6))
     blocks.append(Body("This summary is generated from the call log. A full per-call CSV accompanies it."))
     blocks.append(_generated_footer())
     return blocks
@@ -669,8 +661,10 @@ def _evidence_packet(profile, stats, rows, source_note=None) -> list:
                "local police - in person is best. Bring this packet and the CSV of every call."),
         Bullet("4. As each case / complaint number comes in, add it in My info and regenerate - the "
                "documents cross-reference one another."),
-        Gap(4),
     ]
+    blocks.append(PageBreak())
+    blocks.append(Heading("Background: How Caller ID Spoofing Works"))
+    blocks += _spoofing_explainer()[1:]  # drop the duplicate heading
     for key in PACKET_CONTENTS:
         blocks.append(PageBreak())
         blocks += _BUILDERS[key](profile, stats, rows, source_note)
@@ -755,9 +749,16 @@ def _render_pdf(blocks: list, out_path: str, rows: list[CallRow]) -> str:
             pdf.set_x(MARGIN)
             pdf.multi_cell(CONTENT_W, 14, _latin1(f"-  {block.text}"), new_x="LMARGIN", new_y="NEXT")
         elif isinstance(block, Gap):
-            pdf.set_y(pdf.get_y() + block.points)
+            # A gap that would run off the page just goes to the next one.
+            new_y = pdf.get_y() + block.points
+            if new_y > PAGE_H - MARGIN:
+                pdf.add_page()
+            else:
+                pdf.set_y(new_y)
         elif isinstance(block, PageBreak):
-            pdf.add_page()
+            # Only break if there's content on the page — never emit a blank one.
+            if pdf.get_y() > MARGIN + 2:
+                pdf.add_page()
         elif isinstance(block, Table):
             _draw_table(pdf, block, ensure)
         elif isinstance(block, Pie):

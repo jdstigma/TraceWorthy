@@ -560,31 +560,23 @@ object DocumentGenerator {
     private fun spoofingExplainer(): List<Block> = listOf(
         Block.Heading("How Caller ID Spoofing Works"),
         Block.Body(
-            "Caller ID spoofing is making a phone display a number other than the one actually placing " +
-                "the call. It is cheap and trivial: apps and web services let anyone enter any number as " +
-                "their outbound caller ID. The number shown to the recipient is chosen by the caller and " +
-                "is not verified by the network at the point the call is received.",
+            "Caller ID spoofing makes a phone display a number other than the real one. It is cheap and " +
+                "trivial — apps and websites let anyone set any number as their outbound caller ID, and " +
+                "the network does not verify it at the point of the call.",
         ),
         Block.Body(
-            "Targeted harassment (this case): a single person places repeated calls and changes the " +
-                "displayed number on each one — often to a new, never-reused number — specifically to " +
-                "defeat call blocking and stay anonymous. A long list of numbers that each called only " +
-                "once or twice is a signature of one spoofing caller, not evidence of many callers.",
+            "A harasser who changes the displayed number on every call — often a new, never-reused number " +
+                "each time — does so to defeat blocking and stay anonymous. A long list of numbers that " +
+                "each called only once or twice is the signature of one spoofing caller, not many callers. " +
+                "The same method is used at scale by robocall operations, frequently \"neighbor spoofing\" " +
+                "the recipient's own area code.",
         ),
         Block.Body(
-            "Mass campaigns: the same technique is used at scale by robocall and scam operations, which " +
-                "cycle through thousands of spoofed numbers — frequently ones sharing the recipient's area " +
-                "code and prefix (\"neighbor spoofing\") to raise answer rates. High volume from many " +
-                "distinct numbers over a short period indicates automated dialing.",
-        ),
-        Block.Body(
-            "Who can unmask it: neither the recipient nor a carrier's consumer tools can determine the " +
-                "true originating line. That requires a STIR/SHAKEN traceback coordinated through the " +
-                "Industry Traceback Group, or a subpoena / court order compelling the carriers in the call " +
-                "path to produce their routing records. Spoofing caller ID to defraud, cause harm, or " +
-                "wrongfully obtain value is prohibited by the federal Truth in Caller ID Act " +
-                "(47 U.S.C. § 227(e)); the TRACED Act (2019) mandates STIR/SHAKEN deployment and " +
-                "strengthens enforcement.",
+            "Neither the recipient nor consumer-grade carrier tools can identify the true originating " +
+                "line. That takes a STIR/SHAKEN traceback through the Industry Traceback Group, or a " +
+                "subpoena to the carriers in the call path. Spoofing to defraud or cause harm violates the " +
+                "federal Truth in Caller ID Act (47 U.S.C. § 227(e)); the 2019 TRACED Act strengthened " +
+                "enforcement and mandated STIR/SHAKEN.",
         ),
     )
 
@@ -722,7 +714,9 @@ object DocumentGenerator {
         blocks.add(Block.Bullet("2. File an FCC complaint at consumercomplaints.fcc.gov using the FCC complaint document. Save the confirmation number on the storyboard."))
         blocks.add(Block.Bullet("3. Take the police report cover note and the non-disclosure order request to your local police — in person is best. Bring this packet and the CSV of every call."))
         blocks.add(Block.Bullet("4. As each case / complaint number comes in, add it on the storyboard and regenerate — the documents cross-reference one another."))
-        blocks.add(Block.Gap(4f))
+        blocks.add(Block.PageBreak)
+        blocks.add(Block.Heading("Background: How Caller ID Spoofing Works"))
+        blocks.addAll(spoofingExplainer().drop(1))  // drop the duplicate heading
         PACKET_CONTENTS.forEach { t ->
             blocks.add(Block.PageBreak)
             blocks.addAll(buildBlocks(t, case, myInfo, stats, entries, branches))
@@ -950,8 +944,6 @@ object DocumentGenerator {
         blocks.add(Block.Scatter(scEntries.map { ScatterDot(it.timestampMillis, ScatterColors.colorFor(it.number, scNums)) }))
         blocks.add(Block.Body("Each dot is a call — the horizontal position is the date and the vertical position is the time of day. Dots are colored by the top-5 most-called numbers (see legend); other numbers are gray. This shows when calls arrive, including overnight clustering or bursts on particular dates."))
         blocks.addAll(flaggedNumberSection(entries, branches))
-        blocks.add(Block.Gap(6f))
-        blocks.addAll(spoofingExplainer())
         blocks.add(Block.Gap(6f))
         blocks.add(Block.Body("This summary is generated from the device call log. A full per-call CSV is available via the Call log screen's Export."))
         blocks.add(generatedFooter())
