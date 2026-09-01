@@ -15,8 +15,8 @@ android {
         applicationId = "com.traceworthy.app"
         minSdk = 29
         targetSdk = 36
-        versionCode = 15
-        versionName = "1.10.0"
+        versionCode = 16
+        versionName = "1.11.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

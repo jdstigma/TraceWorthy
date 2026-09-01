@@ -75,22 +75,26 @@ class App(tk.Tk):
         self._notes_rows: list[dict] = []
         self._notes_header: list[str] = []
         self._notes_sel: str | None = None
+        self._safe_numbers: list[str] = []
 
         nb = ttk.Notebook(self)
         nb.pack(fill="both", expand=True, padx=8, pady=(8, 4))
         self.backup_tab = ttk.Frame(nb)
         self.notes_tab = ttk.Frame(nb)
+        self.wl_tab = ttk.Frame(nb)
         self.info_tab = ttk.Frame(nb)
         self.gen_tab = ttk.Frame(nb)
         nb.add(self.backup_tab, text="1 · Backup")
         nb.add(self.notes_tab, text="2 · Notes")
-        nb.add(self.info_tab, text="3 · My info")
-        nb.add(self.gen_tab, text="4 · Generate")
+        nb.add(self.wl_tab, text="3 · White list")
+        nb.add(self.info_tab, text="4 · My info")
+        nb.add(self.gen_tab, text="5 · Generate")
         nb.bind("<<NotebookTabChanged>>", self._on_tab_changed)
         self._nb = nb
 
         self._build_backup_tab()
         self._build_notes_tab()
+        self._build_wl_tab()
         self._build_info_tab()
         self._build_gen_tab()
 
@@ -303,10 +307,13 @@ class App(tk.Tk):
         ttk.Button(btns, text="Save all to CSV", command=self._save_notes_csv).pack(side="left", padx=6)
 
     def _on_tab_changed(self, _e):
-        if not hasattr(self, "tree"):
-            return
-        if self._nb.index(self._nb.select()) == 1 and not self._notes_rows:
+        idx = self._nb.index(self._nb.select())
+        if idx == 1 and hasattr(self, "tree") and not self._notes_rows:
             self._load_notes_csv()
+        elif idx == 2 and hasattr(self, "wl_tree"):
+            if not self._notes_rows:
+                self._load_notes_csv()
+            self._wl_refresh()
 
     def _load_notes_csv(self):
         import csv
@@ -362,6 +369,102 @@ class App(tk.Tk):
         n = sum(1 for r in self._notes_rows if r.get("Note") or r.get("Severity"))
         self._log(f"Saved {os.path.abspath(CSV_PATH)} — {n} call(s) now have a note/severity.\n")
 
+    # ----------------------------------------------------------- White list --
+    def _build_wl_tab(self):
+        f = self.wl_tab
+        ttk.Label(
+            f,
+            text="Numbers that called you, most calls first. Tick the ones you actually know — a "
+                 "friend or relative on a number you never saved. Their calls are then left out of "
+                 "every figure, chart, list, and the CSV, and the evidence summary shows an "
+                 "all-incoming vs. potential-harassment comparison.",
+            wraplength=780, foreground="#555", justify="left",
+        ).pack(anchor="w", padx=14, pady=(10, 6))
+
+        cols = ("number", "calls", "hits", "known")
+        self.wl_tree = ttk.Treeview(f, columns=cols, show="headings", height=15, selectmode="browse")
+        for c, txt, w in (("number", "Number", 220), ("calls", "Calls", 70),
+                          ("hits", "Pattern hits", 110), ("known", "Known caller", 110)):
+            self.wl_tree.heading(c, text=txt)
+            self.wl_tree.column(c, width=w, anchor="center" if c != "number" else "w")
+        self.wl_tree.pack(fill="both", expand=True, padx=14)
+        self.wl_tree.bind("<Double-1>", self._wl_toggle_selected)
+        self.wl_tree.bind("<space>", self._wl_toggle_selected)
+
+        bar = ttk.Frame(f)
+        bar.pack(fill="x", padx=14, pady=8)
+        ttk.Button(bar, text="Reload from calls", command=self._wl_reload).pack(side="left")
+        ttk.Button(bar, text="Toggle selected", command=self._wl_toggle_selected).pack(side="left", padx=6)
+        ttk.Button(bar, text="Save white list", command=self._wl_save).pack(side="left", padx=6)
+        self.wl_manual = tk.StringVar()
+        ttk.Entry(bar, textvariable=self.wl_manual, width=20).pack(side="left", padx=(18, 4))
+        ttk.Button(bar, text="Add number", command=self._wl_add_manual).pack(side="left")
+
+    def _wl_key(self, number: str) -> str:
+        return Profile._num_key(number)
+
+    def _wl_is_safe(self, number: str) -> bool:
+        keys = {self._wl_key(n) for n in self._safe_numbers}
+        return self._wl_key(number) in keys
+
+    def _wl_reload(self):
+        self._load_notes_csv()
+        self._wl_refresh()
+
+    def _wl_refresh(self):
+        if not hasattr(self, "wl_tree"):
+            return
+        self.wl_tree.delete(*self.wl_tree.get_children())
+        agg: dict[str, dict] = {}
+        for row in self._notes_rows:
+            num = (row.get("Number") or "").strip()
+            if not num:
+                continue
+            a = agg.setdefault(num, {"calls": 0, "hits": 0})
+            a["calls"] += 1
+            if (row.get("Suspicious") or "").upper() == "YES":
+                a["hits"] += 1
+        shown_keys = set()
+        for num, a in sorted(agg.items(), key=lambda kv: kv[1]["calls"], reverse=True):
+            if a["calls"] < 2:
+                continue
+            safe = self._wl_is_safe(num)
+            shown_keys.add(self._wl_key(num))
+            self.wl_tree.insert("", "end", iid=num, values=(
+                num, a["calls"], a["hits"] or "", "yes" if safe else ""))
+        # manually-added safe numbers that didn't appear in the call log
+        for n in self._safe_numbers:
+            if self._wl_key(n) not in shown_keys:
+                self.wl_tree.insert("", "end", iid=n, values=(n, "—", "", "yes"))
+        marked = sum(1 for n in self._safe_numbers if n.strip())
+        self._log(f"White list: {marked} number(s) marked as known callers.\n")
+
+    def _wl_toggle_selected(self, _e=None):
+        sel = self.wl_tree.selection()
+        if not sel:
+            return
+        number = sel[0]
+        if self._wl_is_safe(number):
+            k = self._wl_key(number)
+            self._safe_numbers = [n for n in self._safe_numbers if self._wl_key(n) != k]
+        else:
+            self._safe_numbers.append(number)
+        self._wl_refresh()
+        try:
+            self.wl_tree.selection_set(number)
+        except tk.TclError:
+            pass
+
+    def _wl_add_manual(self):
+        n = self.wl_manual.get().strip()
+        if n and not self._wl_is_safe(n):
+            self._safe_numbers.append(n)
+            self.wl_manual.set("")
+            self._wl_refresh()
+
+    def _wl_save(self):
+        self.save_profile()
+
     # ------------------------------------------------------------- My info --
     def _build_info_tab(self):
         f = self.info_tab
@@ -399,14 +502,6 @@ class App(tk.Tk):
         for ht in HarassmentType:
             ttk.Radiobutton(htf, text=ht.label, value=ht.value, variable=self.ht_var).pack(anchor="w")
 
-        ttk.Label(grid, text="Known callers").grid(row=11, column=0, sticky="nw", pady=6)
-        self.safe_text = tk.Text(grid, height=4, width=38, wrap="none")
-        self.safe_text.grid(row=11, column=1, sticky="w", padx=8)
-        ttk.Label(grid, text="one number per line — friends who call from a number\n"
-                             "you never saved; dropped from every figure, chart,\n"
-                             "list, and the CSV, with an all-incoming comparison",
-                  foreground="#666").grid(row=11, column=2, sticky="w")
-
         btns = ttk.Frame(f)
         btns.pack(fill="x", padx=14, pady=6)
         ttk.Button(btns, text="Save", command=self.save_profile).pack(side="left")
@@ -420,16 +515,16 @@ class App(tk.Tk):
         for k, var in self.vars.items():
             var.set(getattr(p, k, ""))
         self.ht_var.set(p.harassment_type.value)
-        self.safe_text.delete("1.0", "end")
-        self.safe_text.insert("1.0", "\n".join(p.safe_numbers))
+        self._safe_numbers = list(p.safe_numbers)
+        if hasattr(self, "wl_tree"):
+            self._wl_refresh()
         if not initial:
             self._log(f"Loaded profile from {os.path.abspath(PROFILE_PATH)}\n")
 
     def save_profile(self) -> Profile:
-        safe = [ln.strip() for ln in self.safe_text.get("1.0", "end").splitlines() if ln.strip()]
         p = Profile(
             harassment_type=HarassmentType.parse(self.ht_var.get()),
-            safe_numbers=safe,
+            safe_numbers=list(getattr(self, "_safe_numbers", [])),
             **{k: v.get().strip() for k, v in self.vars.items()},
         )
         path = p.save(PROFILE_PATH)

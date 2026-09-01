@@ -38,8 +38,8 @@ enum class CaseType(
         get() = when (this) {
             PhoneHarassment -> listOf(
                 CaseScreen.Storyboard, CaseScreen.CallLog, CaseScreen.Analysis,
-                CaseScreen.FlaggedNumbers, CaseScreen.CallTrace, CaseScreen.Documents,
-                CaseScreen.CaseDetail,
+                CaseScreen.FlaggedNumbers, CaseScreen.WhiteList, CaseScreen.CallTrace,
+                CaseScreen.Documents, CaseScreen.CaseDetail,
             )
             IdentityTheft -> listOf(
                 CaseScreen.Storyboard, CaseScreen.FraudItems, CaseScreen.Documents,

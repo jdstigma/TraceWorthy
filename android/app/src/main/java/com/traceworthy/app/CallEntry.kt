@@ -40,19 +40,27 @@ data class CallEntry(
     val isKnownContact: Boolean get() = !cachedName.isNullOrBlank()
 
     /**
-     * Heuristic flag for the "silent stranger" harassment pattern:
+     * Whether this call fits the "silent stranger" harassment pattern:
      * an incoming/missed/rejected call, from a number not in your contacts,
      * that either never connected or was answered but silent (very short).
-     * A number the user has marked as a known caller is never flagged.
+     * Ignores the known-caller list — used by the White list screen to show how
+     * many of a caller's calls would be flagged.
      */
-    val isSuspicious: Boolean
+    val matchesHarassmentPattern: Boolean
         get() {
             val incomingLike = type == android.provider.CallLog.Calls.INCOMING_TYPE ||
                 type == android.provider.CallLog.Calls.MISSED_TYPE ||
                 type == android.provider.CallLog.Calls.REJECTED_TYPE
             val silent = durationSeconds <= flagThresholdSeconds // missed, or answered-but-silent
-            return incomingLike && !isKnownContact && !isSafeListed && silent
+            return incomingLike && !isKnownContact && silent
         }
+
+    /**
+     * The flag actually used everywhere in the app: the harassment pattern, minus
+     * any number the user has marked as a known caller.
+     */
+    val isSuspicious: Boolean
+        get() = matchesHarassmentPattern && !isSafeListed
 
     val typeLabel: String
         get() = when (type) {

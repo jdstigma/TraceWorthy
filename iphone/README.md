@@ -81,17 +81,21 @@ Android app's export, so `../analysis/analyze_calls.py` also reads it directly.
 "said he knew my address"), choose a severity (Silent / Spoken / Threatening),
 **Apply**, then **Save all to CSV**. These become the incident-timeline document.
 
-### Step 5 — Fill in your details and build the packet
+### Step 5 *(optional)* — Mark the numbers you actually know
+
+**White list** tab: the numbers that called you, most calls first. Tick anyone you
+recognize — a friend or relative on a number you never saved to contacts.
+Double-click a row (or select it and **Toggle selected**), then **Save white
+list**. Their calls are then left out of every figure, chart, list, and the CSV,
+and the evidence summary shows an all-incoming vs. potential-harassment
+comparison. Use **Add number** for anyone who isn't in the list.
+
+### Step 6 — Fill in your details and build the packet
 
 1. **My info** tab — your name, **contact phone**, the **affected number** (the line
    getting the calls — leave blank if it's the same as your contact phone),
    city/state, carrier, and any FCC / police / carrier case numbers. **Save**
    (stored in `traceworthy_profile.json`). Blank fields show as `[PLACEHOLDER]`.
-   Optionally list **Known callers** — friends or relatives who call from a
-   number you never saved to contacts (one per line). Their calls are dropped
-   from every figure, chart, list, and the CSV; the evidence summary reports how
-   many were removed and shows an all-incoming vs. potential-harassment
-   comparison.
 2. **Generate** tab — **Build full evidence packet**. PDFs land in `iphone_packet/`,
    numbered in filing order: `01` evidence summary → `02` incident timeline →
    `03` carrier script → `04` FCC complaint → `05` police report → `06`

@@ -2,6 +2,7 @@ package com.traceworthy.app
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.automirrored.filled.PlaylistAddCheck
 import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.CreditCardOff
@@ -26,6 +27,7 @@ enum class CaseScreen(val title: String, val icon: ImageVector) {
     CallLog("Call log", Icons.Filled.Phone),
     Analysis("Analysis", Icons.Filled.BarChart),
     FlaggedNumbers("Flagged numbers", Icons.Filled.Flag),
+    WhiteList("White list", Icons.AutoMirrored.Filled.PlaylistAddCheck),
     CallTrace("Call trace (*57)", Icons.Filled.TrackChanges),
     FraudItems("Fraudulent accounts", Icons.Filled.CreditCardOff),
     Documents("Documents", Icons.Filled.Description),
