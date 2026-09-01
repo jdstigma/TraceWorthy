@@ -2,6 +2,7 @@ package com.traceworthy.app
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.automirrored.filled.PlaylistAddCheck
 import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Description
@@ -24,6 +25,7 @@ enum class Screen(
     CallLog("Call log", Icons.Filled.Phone),
     Analysis("Analysis", Icons.Filled.BarChart),
     FlaggedNumbers("Flagged numbers", Icons.Filled.Flag),
+    WhiteList("White list", Icons.AutoMirrored.Filled.PlaylistAddCheck),
     CallTrace("Call trace (*57)", Icons.Filled.TrackChanges),
     Documents("Documents", Icons.Filled.Description),
     Learn("Learn", Icons.AutoMirrored.Filled.MenuBook),
