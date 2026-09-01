@@ -272,9 +272,9 @@ object DocumentGenerator {
         myInfo: MyInfo,
         entries: List<CallEntry>,
     ): List<Block> {
-        // Known callers (friends on unsaved numbers) are removed from every figure,
-        // chart, and list; the evidence summary reports how many and shows an
-        // all-incoming vs. potential-harassment comparison.
+        // Known callers (friends on unsaved numbers) are set aside from every
+        // figure, chart, and list; the evidence summary reports how many were set
+        // aside and how many incoming calls the analysis then covers.
         val excludedKnown = entries.filter { it.isSafeListed }
         val evidence = entries.filterNot { it.isSafeListed }
         val stats = CallStats.from(evidence)
@@ -716,39 +716,42 @@ object DocumentGenerator {
     }
 
     /**
-     * The "N calls from M known callers were removed" disclosure + an all-incoming
-     * vs. potential-harassment comparison. Empty when the user has no known callers.
+     * Accounts for the known-contact calls that were set aside: what the analysis
+     * covers vs. the full incoming total. Deliberately NOT framed as "harassment
+     * vs. not" — the harassment finding is the flagged-pattern count, shown here
+     * as the last line of the funnel. Empty when nothing was set aside.
      */
     private fun knownCallerBlocks(
         myInfo: MyInfo,
         evidence: List<CallEntry>,
         excludedKnown: List<CallEntry>,
+        flaggedInAnalysis: Int,
     ): List<Block> {
         if (excludedKnown.isEmpty()) return emptyList()
         val knownNumbers = excludedKnown.map { it.number }.distinct().size
-        val allCalls = evidence.size + excludedKnown.size
-        val allNumbers = (evidence.map { it.number } + excludedKnown.map { it.number }).distinct().size
+        val analyzed = evidence.size
+        val allCalls = analyzed + excludedKnown.size
         val name = myInfo.fullName.ifBlank { "the complainant" }
+        val nCalls = if (excludedKnown.size == 1) "" else "s"
+        val nNums = if (knownNumbers == 1) "" else "s"
         return listOf(
+            Block.Heading("Which Calls This Analysis Covers"),
             Block.Body(
-                "${excludedKnown.size} call${if (excludedKnown.size == 1) "" else "s"} from " +
-                    "$knownNumbers phone number${if (knownNumbers == 1) "" else "s"} that $name has " +
-                    "identified as known personal contacts — people not saved in the phone's address " +
-                    "book — have been removed. Every figure, chart, and list in this document counts " +
-                    "only the remaining calls, i.e. the potentially harassing ones.",
+                "At $name's direction, ${excludedKnown.size} call$nCalls from $knownNumbers phone " +
+                    "number$nNums identified as known personal contacts — friends or relatives simply " +
+                    "not saved in the phone's address book — were set aside. The figures throughout " +
+                    "this document cover the remaining $analyzed incoming call${if (analyzed == 1) "" else "s"}. " +
+                    "Setting a number aside is not a finding about any call; whether the remaining " +
+                    "calls include harassment is what the flagged-call pattern (below) addresses.",
             ),
-            Block.Heading("All Incoming Calls Vs Potential Harassment"),
             Block.Table(
-                listOf("", "All incoming", "Potential harassment"),
+                listOf("Incoming calls", "Count"),
                 listOf(
-                    listOf("Calls", allCalls.toString(), evidence.size.toString()),
-                    listOf("Distinct numbers", allNumbers.toString(), evidence.map { it.number }.distinct().size.toString()),
+                    listOf("Received this period (all)", allCalls.toString()),
+                    listOf("Set aside — known personal contacts", "${excludedKnown.size}  ($knownNumbers number$nNums)"),
+                    listOf("Covered by this analysis", analyzed.toString()),
+                    listOf("Of those, matching the harassment pattern", flaggedInAnalysis.toString()),
                 ),
-            ),
-            Block.Body(
-                "\"All incoming\" is every call received in this period. \"Potential harassment\" is " +
-                    "that total minus the known personal contacts above — the figures used everywhere " +
-                    "else in this document.",
             ),
         )
     }
@@ -798,11 +801,10 @@ object DocumentGenerator {
         if (excludedKnown.isNotEmpty()) {
             val knownNumbers = excludedKnown.map { it.number }.distinct().size
             blocks.add(Block.Body(
-                "This packet reflects only the potentially harassing calls: " +
-                    "${excludedKnown.size} call${if (excludedKnown.size == 1) "" else "s"} from " +
-                    "$knownNumbers known personal contact${if (knownNumbers == 1) "" else "s"} " +
-                    "(not in the phone's address book) have been removed. The evidence summary shows " +
-                    "the all-incoming vs. potential-harassment comparison.",
+                "This packet sets aside ${excludedKnown.size} call${if (excludedKnown.size == 1) "" else "s"} " +
+                    "from $knownNumbers number${if (knownNumbers == 1) "" else "s"} identified as known " +
+                    "personal contacts and covers the remaining incoming calls. The evidence summary " +
+                    "breaks down the counts.",
             ))
         }
         val contents = packetContents(entries)
@@ -1026,7 +1028,7 @@ object DocumentGenerator {
             Block.Body("Reporting period: $first to $last"),
             Block.Body("Generated: ${human.format(Date())}"),
         )
-        blocks.addAll(knownCallerBlocks(myInfo, entries, excludedKnown))
+        blocks.addAll(knownCallerBlocks(myInfo, entries, excludedKnown, stats.flaggedCalls))
         blocks.addAll(statsSection(entries))
         blocks.add(Block.Heading("Totals"))
         blocks.add(Block.Bullet("Calls logged: ${stats.totalCalls}"))

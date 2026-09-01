@@ -321,7 +321,7 @@ def _num_key(number: str) -> str:
 
 
 def _split_known(rows: list[CallRow], profile) -> tuple[list[CallRow], list[CallRow]]:
-    """Partition rows into (potential harassment, known personal contacts) using
+    """Partition rows into (analyzed, known personal contacts) using
     profile.safe_numbers — friends/relatives calling from unsaved numbers."""
     safe = {_num_key(n) for n in (getattr(profile, "safe_numbers", None) or [])}
     if not safe:
@@ -333,32 +333,35 @@ def _split_known(rows: list[CallRow], profile) -> tuple[list[CallRow], list[Call
 
 
 def _known_caller_blocks(profile, evidence_rows: list[CallRow],
-                         excluded_rows: list[CallRow]) -> list:
-    """The "N calls from M known callers were removed" disclosure plus an
-    all-incoming vs. potential-harassment comparison. Empty when there are none."""
+                         excluded_rows: list[CallRow], flagged: int) -> list:
+    """Accounts for the known-contact calls that were set aside: what the analysis
+    covers vs. the full incoming total. Deliberately NOT framed as "harassment
+    vs. not" — the harassment finding is the flagged-pattern count, shown here as
+    the last line of the funnel. Empty when nothing was set aside."""
     if not excluded_rows:
         return []
     known_numbers = len({_num_key(r.number) for r in excluded_rows})
-    evidence_numbers = len({_num_key(r.number) for r in evidence_rows})
-    all_calls = len(evidence_rows) + len(excluded_rows)
-    all_numbers = len({_num_key(r.number) for r in evidence_rows + excluded_rows})
+    analyzed = len(evidence_rows)
+    all_calls = analyzed + len(excluded_rows)
     name = getattr(profile, "full_name", "") or ""
     if not name.strip():
         name = "the complainant"
     s_calls = "" if len(excluded_rows) == 1 else "s"
     s_nums = "" if known_numbers == 1 else "s"
+    s_an = "" if analyzed == 1 else "s"
     return [
-        Body(f"{len(excluded_rows)} call{s_calls} from {known_numbers} phone number{s_nums} that "
-             f"{name} has identified as known personal contacts - people not saved in the phone's "
-             "address book - have been removed. Every figure, chart, and list in this document "
-             "counts only the remaining calls, i.e. the potentially harassing ones."),
-        Heading("All Incoming Calls Vs Potential Harassment"),
-        Table(["", "All incoming", "Potential harassment"],
-              [["Calls", str(all_calls), str(len(evidence_rows))],
-               ["Distinct numbers", str(all_numbers), str(evidence_numbers)]]),
-        Body('"All incoming" is every call received in this period. "Potential harassment" is that '
-             "total minus the known personal contacts above - the figures used everywhere else in "
-             "this document."),
+        Heading("Which Calls This Analysis Covers"),
+        Body(f"At {name}'s direction, {len(excluded_rows)} call{s_calls} from {known_numbers} phone "
+             f"number{s_nums} identified as known personal contacts - friends or relatives simply "
+             "not saved in the phone's address book - were set aside. The figures throughout this "
+             f"document cover the remaining {analyzed} incoming call{s_an}. Setting a number aside "
+             "is not a finding about any call; whether the remaining calls include harassment is "
+             "what the flagged-call pattern (below) addresses."),
+        Table(["Incoming calls", "Count"],
+              [["Received this period (all)", str(all_calls)],
+               ["Set aside - known personal contacts", f"{len(excluded_rows)}  ({known_numbers} number{s_nums})"],
+               ["Covered by this analysis", str(analyzed)],
+               ["Of those, matching the harassment pattern", str(flagged)]]),
     ]
 
 
@@ -655,7 +658,7 @@ def _evidence_summary(profile, stats, rows, source_note=None, excluded_known=Non
     ]
     if source_note:
         blocks.append(Body(source_note))
-    blocks += _known_caller_blocks(profile, rows, excluded_known or [])
+    blocks += _known_caller_blocks(profile, rows, excluded_known or [], stats.flagged_calls)
     blocks += _stats_section(rows)
     blocks += [
         Heading("Totals"),
@@ -716,10 +719,9 @@ def _evidence_packet(profile, stats, rows, source_note=None, excluded_known=None
         s_c = "" if len(excluded_known) == 1 else "s"
         s_n = "" if known_numbers == 1 else "s"
         blocks.append(Body(
-            f"This packet reflects only the potentially harassing calls: {len(excluded_known)} "
-            f"call{s_c} from {known_numbers} known personal contact{s_n} (not in the phone's address "
-            "book) have been removed. The evidence summary shows the all-incoming vs. "
-            "potential-harassment comparison."))
+            f"This packet sets aside {len(excluded_known)} call{s_c} from {known_numbers} "
+            f"number{s_n} identified as known personal contacts and covers the remaining incoming "
+            "calls. The evidence summary breaks down the counts."))
     contents = _packet_contents(rows)
     blocks.append(Heading("Contents"))
     for i, key in enumerate(contents, 1):
@@ -984,8 +986,8 @@ def generate_all(rows: list[CallRow], profile, out_dir: str, source_note: str | 
     Returns {name: path}."""
     os.makedirs(out_dir, exist_ok=True)
     # Known callers (friends on unsaved numbers, from profile.safe_numbers) are
-    # removed from every figure, chart, and list; the evidence summary reports how
-    # many and shows an all-incoming vs. potential-harassment comparison.
+    # set aside from every figure, chart, and list; the evidence summary reports
+    # how many were set aside and how many incoming calls the analysis covers.
     rows, excluded_known = _split_known(rows, profile)
     stats = CallStats.from_rows(rows)
     stamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")

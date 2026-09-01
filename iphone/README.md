@@ -86,9 +86,9 @@ Android app's export, so `../analysis/analyze_calls.py` also reads it directly.
 **White list** tab: the numbers that called you, most calls first. Tick anyone you
 recognize — a friend or relative on a number you never saved to contacts.
 Double-click a row (or select it and **Toggle selected**), then **Save white
-list**. Their calls are then left out of every figure, chart, list, and the CSV,
-and the evidence summary shows an all-incoming vs. potential-harassment
-comparison. Use **Add number** for anyone who isn't in the list.
+list**. Their calls are then left out of every figure, chart, list, and the CSV;
+the evidence summary notes how many calls were set aside and how many incoming
+calls the analysis covers. Use **Add number** for anyone who isn't in the list.
 
 ### Step 6 — Fill in your details and build the packet
 

@@ -213,7 +213,7 @@ private fun WhiteListItem(
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Switch(checked = whitelisted, onCheckedChange = onToggle)
             Text(
-                if (whitelisted) "known" else "flag",
+                if (whitelisted) "known" else "",
                 fontSize = 10.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

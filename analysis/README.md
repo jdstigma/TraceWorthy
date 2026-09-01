@@ -63,8 +63,9 @@ the CSV (the Android app fills these; the `../iphone/` tool has a Notes tab for 
 
 A `"safe_numbers"` list in the profile JSON (e.g. `["5551234567", "+1 555 987 6543"]`)
 marks **known callers** — friends or relatives on numbers you never saved to
-contacts. Their calls are dropped from every figure, chart, list, and the packet;
-the evidence summary reports how many were removed and shows an all-incoming vs.
-potential-harassment comparison table.
+contacts. Their calls are set aside from every figure, chart, list, and the packet;
+the evidence summary's "Which calls this analysis covers" section reports how many
+were set aside, how many incoming calls remain, and how many of those match the
+flagged-call pattern.
 
 Colors match the in-app charts, so the phone view and the report look consistent.
