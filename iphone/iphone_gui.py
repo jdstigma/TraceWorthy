@@ -376,8 +376,8 @@ class App(tk.Tk):
             f,
             text="Numbers that called you, most calls first. Tick the ones you actually know — a "
                  "friend or relative on a number you never saved. Their calls are then left out of "
-                 "every figure, chart, list, and the CSV, and the evidence summary shows an "
-                 "all-incoming vs. potential-harassment comparison.",
+                 "every figure, chart, list, and the CSV; the evidence summary notes how many were "
+                 "set aside and how many incoming calls the analysis covers.",
             wraplength=780, foreground="#555", justify="left",
         ).pack(anchor="w", padx=14, pady=(10, 6))
 

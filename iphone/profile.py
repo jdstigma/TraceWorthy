@@ -65,9 +65,9 @@ class Profile:
     police_case_number: str = ""
     carrier_case_number: str = ""
     # Known callers: friends/relatives who call from a number you never saved to
-    # contacts. Their calls are dropped from every evidence figure, chart, list,
-    # and the CSV; the evidence summary reports how many and shows an
-    # all-incoming vs. potential-harassment comparison.
+    # contacts. Their calls are set aside from every evidence figure, chart, list,
+    # and the CSV; the evidence summary reports how many were set aside and how
+    # many incoming calls the analysis then covers.
     safe_numbers: list[str] = field(default_factory=list)
 
     @property
