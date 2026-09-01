@@ -97,9 +97,16 @@ fun DocumentsScreen(
             DocumentCard(DocumentType.EvidencePacket, emphasized = true) { openPreview(DocumentType.EvidencePacket) }
             Spacer(Modifier.height(16.dp))
             Text(
-                "Or generate documents individually",
+                "Or generate one document on its own",
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(2.dp))
+            Text(
+                "The packet above already contains every one of these — grab a single document " +
+                    "only when you need it alone, e.g. to paste the FCC text into the web form.",
+                fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(Modifier.height(10.dp))

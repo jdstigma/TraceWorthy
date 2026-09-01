@@ -96,11 +96,16 @@ calls the analysis covers. Use **Add number** for anyone who isn't in the list.
    getting the calls — leave blank if it's the same as your contact phone),
    city/state, carrier, and any FCC / police / carrier case numbers. **Save**
    (stored in `traceworthy_profile.json`). Blank fields show as `[PLACEHOLDER]`.
-2. **Generate** tab — **Build full evidence packet**. PDFs land in `iphone_packet/`,
-   numbered in filing order: `01` evidence summary → `02` incident timeline →
-   `03` carrier script → `04` FCC complaint → `05` police report → `06`
-   non-disclosure order request (`00` is the pre-bundled packet). Drag the folder
-   into Acrobat's *Combine Files* and they're already in the right sequence.
+2. **Generate** tab — **Build full evidence packet**. It writes **one file** to
+   `iphone_packet/` — `TraceWorthy_evidence_packet_*.pdf` — the complete packet
+   (cover, spoofing background, then every document in filing order: evidence
+   summary → incident timeline → carrier script → FCC complaint → police report →
+   non-disclosure order request). Hand that one file over.
+
+   Each document also sits on its own in `iphone_packet/parts/` (numbered
+   `01`–`06`, plus the chart PNGs). Use `parts/` only when you need one document
+   alone — e.g. to paste the FCC description text into the online form. Don't
+   combine the packet **and** the parts; every page is in both.
 
 Command line:
 
@@ -115,13 +120,17 @@ python -m iphone.cli packet --csv iphone_calls.csv --profile traceworthy_profile
 | File | Purpose |
 |---|---|
 | `Documents\TraceWorthy\iphone_calls.csv` | The extracted call log (same format as the Android app's export) |
-| `TraceWorthy_00_evidence_packet_*.pdf` | All of the below, bundled with a cover + index |
-| `TraceWorthy_01_evidence_summary_*.pdf` | One-page stats + charts to attach to any filing |
-| `TraceWorthy_02_incident_timeline_*.pdf` | Chronological log (from the notes added in Step 4) |
-| `TraceWorthy_03_carrier_script_*.pdf` | Word-for-word script for your carrier's fraud desk |
-| `TraceWorthy_04_fcc_complaint_*.pdf` | Text to paste into consumercomplaints.fcc.gov |
-| `TraceWorthy_05_police_report_*.pdf` | Cover note for police so they can subpoena the carrier |
-| `TraceWorthy_06_non_disclosure_order_*.pdf` | Hand to police: asks that the carrier subpoena be paired with a court order keeping it secret from the subscriber |
+| **`iphone_packet\TraceWorthy_evidence_packet_*.pdf`** | **The complete packet — cover + spoofing background + all six documents in filing order. Hand this over.** |
+| `iphone_packet\parts\01_evidence_summary_*.pdf` | One-page stats + charts to attach to any filing |
+| `iphone_packet\parts\02_incident_timeline_*.pdf` | Chronological log (from the notes added in Step 4) |
+| `iphone_packet\parts\03_carrier_script_*.pdf` | Word-for-word script for your carrier's fraud desk |
+| `iphone_packet\parts\04_fcc_complaint_*.pdf` | Text to paste into consumercomplaints.fcc.gov |
+| `iphone_packet\parts\05_police_report_*.pdf` | Cover note for police so they can subpoena the carrier |
+| `iphone_packet\parts\06_non_disclosure_order_*.pdf` | Hand to police: asks that the carrier subpoena be paired with a court order keeping it secret from the subscriber |
+| `iphone_packet\parts\*.png` | The individual charts |
+
+Everything in `parts\` is already inside the packet above — pull one out only when
+you need it alone. Never combine the packet and the parts; you'd get every page twice.
 
 ## Limits
 

@@ -565,8 +565,8 @@ class App(tk.Tk):
             rows = packet.rows_from_csv(CSV_PATH)
             written = packet.generate_all(rows, profile, OUT_DIR, IPHONE_SOURCE_NOTE)
             print(f"{len(rows)} calls  ->  {os.path.abspath(OUT_DIR)}")
-            for name, p in written.items():
-                print(f"  {os.path.basename(p)}")
+            print(f"  {os.path.basename(written['evidence_packet'])}  <- the complete packet; hand this over")
+            print("  parts/  <- each document on its own + the charts (use if you need one alone)")
 
         self._run(work, "Building evidence packet…")
 

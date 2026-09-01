@@ -53,13 +53,15 @@ Output:
 ```bash
 python packet.py --csv <call log CSV> --profile ..\traceworthy_profile.json --out packet
 ```
-`--profile` is optional — blank fields render as `[PLACEHOLDER]`. Writes the six
-documents (numbered `01`–`06` in filing order: summary → timeline → carrier → FCC →
-police → non-disclosure order request) plus `TraceWorthy_00_evidence_packet_*.pdf`
-(all bundled, cover + index).
-The numeric prefixes make a folder listing / an Acrobat *Combine Files* come out in
-order. The incident timeline is populated from the `Note` / `Severity` columns of
-the CSV (the Android app fills these; the `../iphone/` tool has a Notes tab for it).
+`--profile` is optional — blank fields render as `[PLACEHOLDER]`. Writes **one
+file** to the output folder — `TraceWorthy_evidence_packet_*.pdf` — the complete
+packet (cover, spoofing background, then every document in filing order: summary →
+timeline → carrier → FCC → police → non-disclosure order request). Hand that over.
+Each document also sits on its own in `<out>/parts/` (`01`–`06`, plus the chart
+PNGs); use `parts/` only when you need one document alone. The whole packet is in
+both places — don't combine the top-level file *and* the parts.
+The incident timeline is populated from the `Note` / `Severity` columns of the CSV
+(the Android app fills these; the `../iphone/` tool has a Notes tab for it).
 
 A `"safe_numbers"` list in the profile JSON (e.g. `["5551234567", "+1 555 987 6543"]`)
 marks **known callers** — friends or relatives on numbers you never saved to
