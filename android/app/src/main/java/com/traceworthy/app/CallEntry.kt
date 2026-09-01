@@ -34,7 +34,8 @@ data class CallEntry(
     val type: Int,             // CallLog.Calls.TYPE (INCOMING, MISSED, REJECTED, ...)
     val note: String? = null,  // your annotation (added later via the DB layer)
     val severity: Severity = Severity.Unset, // how serious this call was, if tagged
-    val flagThresholdSeconds: Long = 15L     // ≤ this duration counts as silent/short (user-set)
+    val flagThresholdSeconds: Long = 15L,    // ≤ this duration counts as silent/short (user-set)
+    val isSafeListed: Boolean = false        // user marked this number a "known caller" — excluded from evidence
 ) {
     val isKnownContact: Boolean get() = !cachedName.isNullOrBlank()
 
@@ -42,6 +43,7 @@ data class CallEntry(
      * Heuristic flag for the "silent stranger" harassment pattern:
      * an incoming/missed/rejected call, from a number not in your contacts,
      * that either never connected or was answered but silent (very short).
+     * A number the user has marked as a known caller is never flagged.
      */
     val isSuspicious: Boolean
         get() {
@@ -49,7 +51,7 @@ data class CallEntry(
                 type == android.provider.CallLog.Calls.MISSED_TYPE ||
                 type == android.provider.CallLog.Calls.REJECTED_TYPE
             val silent = durationSeconds <= flagThresholdSeconds // missed, or answered-but-silent
-            return incomingLike && !isKnownContact && silent
+            return incomingLike && !isKnownContact && !isSafeListed && silent
         }
 
     val typeLabel: String

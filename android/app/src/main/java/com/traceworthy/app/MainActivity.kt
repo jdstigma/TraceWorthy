@@ -126,6 +126,7 @@ fun TraceWorthyApp(
         )
     }
     var entries by remember { mutableStateOf<List<CallEntry>>(emptyList()) }
+    var knownCallersVersion by remember { mutableStateOf(0) }
 
     val permissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -141,6 +142,15 @@ fun TraceWorthyApp(
     fun refreshEntries() {
         if (granted) entries = CallLogRepository.readAll(context)
     }
+
+    fun onKnownCallersChanged() {
+        knownCallersVersion++   // refresh the Settings list even without call-log permission
+        refreshEntries()        // re-tag the log so the evidence view updates
+    }
+
+    // Everything evidence-facing (analysis, flagged list, documents, CSV) runs on
+    // the log minus the user's "known callers"; the Call log screen keeps the raw list.
+    val evidenceEntries = remember(entries) { entries.filterNot { it.isSafeListed } }
 
     fun saveCase(updated: Case) {
         cases = CaseStore.upsert(context, updated)
@@ -218,16 +228,23 @@ fun TraceWorthyApp(
                 when (val dest = current) {
                     is Destination.Case -> when (dest.screen) {
                         CaseScreen.Storyboard -> CaseStoryboardScreen(
-                            case = activeCase, myInfo = myInfo, entries = entries, granted = granted,
+                            case = activeCase, myInfo = myInfo, entries = evidenceEntries, granted = granted,
                             onNavigate = { go(Destination.Case(it)) },
                             onCaseChange = { saveCase(it) },
                         )
                         CaseScreen.CaseDetail -> CaseDetailScreen(
                             case = activeCase, myInfo = myInfo, onSave = { saveCase(it) },
                         )
-                        CaseScreen.CallLog -> CallLogScreen(entries, onRefresh = { refreshEntries() })
-                        CaseScreen.Analysis -> AnalysisScreen(entries, onNotesChanged = { refreshEntries() })
-                        CaseScreen.FlaggedNumbers -> FlaggedNumbersScreen(entries)
+                        CaseScreen.CallLog -> CallLogScreen(
+                            entries,
+                            onRefresh = { refreshEntries() },
+                            onKnownCallersChanged = { onKnownCallersChanged() },
+                        )
+                        CaseScreen.Analysis -> AnalysisScreen(evidenceEntries, onNotesChanged = { refreshEntries() })
+                        CaseScreen.FlaggedNumbers -> FlaggedNumbersScreen(
+                            evidenceEntries,
+                            onKnownCallersChanged = { onKnownCallersChanged() },
+                        )
                         CaseScreen.CallTrace -> CallTraceScreen()
                         CaseScreen.FraudItems -> FraudItemsScreen(case = activeCase, onSave = { saveCase(it) })
                         CaseScreen.Documents -> DocumentsScreen(
@@ -253,6 +270,13 @@ fun TraceWorthyApp(
                             onSave = { seconds ->
                                 SettingsStore.setFlagThresholdSeconds(context, seconds)
                                 refreshEntries()
+                            },
+                            knownCallers = remember(knownCallersVersion) {
+                                SafeNumberStore.all(context).toList().sorted()
+                            },
+                            onRemoveKnownCaller = { number ->
+                                SafeNumberStore.remove(context, number)
+                                onKnownCallersChanged()
                             },
                             themeMode = themeMode,
                             onThemeModeChange = onThemeModeChange,

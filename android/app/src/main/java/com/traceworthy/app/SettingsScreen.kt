@@ -18,6 +18,7 @@ import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -35,6 +36,8 @@ import com.traceworthy.app.ui.SectionHeader
 fun SettingsScreen(
     current: Int,
     onSave: (Int) -> Unit,
+    knownCallers: List<String>,
+    onRemoveKnownCaller: (String) -> Unit,
     themeMode: ThemeMode,
     onThemeModeChange: (ThemeMode) -> Unit,
 ) {
@@ -123,6 +126,43 @@ fun SettingsScreen(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(10.dp),
             ) { Text("Save", fontWeight = FontWeight.SemiBold) }
+        }
+        Spacer(Modifier.height(16.dp))
+
+        CGCard {
+            SectionHeader("Known callers")
+            Spacer(Modifier.height(6.dp))
+            Text(
+                "Numbers you've marked as a friend or relative — not in your contacts, but not " +
+                    "harassment. Their calls stay in the call log but are left out of the flagged " +
+                    "pattern, the analysis, the CSV, and the documents. Mark a number from the call " +
+                    "log or the flagged-numbers screen.",
+                fontSize = 13.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(12.dp))
+            if (knownCallers.isEmpty()) {
+                Text(
+                    "None yet.",
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else {
+                knownCallers.forEach { number ->
+                    Row(
+                        Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            number,
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.weight(1f),
+                        )
+                        TextButton(onClick = { onRemoveKnownCaller(number) }) { Text("Remove") }
+                    }
+                }
+            }
         }
         Spacer(Modifier.height(8.dp))
     }

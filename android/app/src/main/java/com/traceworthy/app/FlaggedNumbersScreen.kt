@@ -105,7 +105,10 @@ private fun buildGroups(entries: List<CallEntry>, branches: Map<String, String>)
 }
 
 @Composable
-fun FlaggedNumbersScreen(entries: List<CallEntry>) {
+fun FlaggedNumbersScreen(
+    entries: List<CallEntry>,
+    onKnownCallersChanged: () -> Unit = {},
+) {
     val context = LocalContext.current
     var branchVersion by remember { mutableStateOf(0) } // bump to re-read the store
     val branches = remember(branchVersion) { BranchStore.all(context) }
@@ -127,6 +130,13 @@ fun FlaggedNumbersScreen(entries: List<CallEntry>) {
                 BranchStore.removeBranch(context, selected.key)
                 branchVersion++
                 selectedKey = null
+            },
+            onMarkKnown = {
+                SafeNumberStore.addAll(context, selected.numbers)
+                if (selected.isBranch) BranchStore.removeBranch(context, selected.key)
+                branchVersion++
+                selectedKey = null
+                onKnownCallersChanged()
             },
         )
         return
@@ -356,9 +366,15 @@ private fun GroupListCard(
 }
 
 @Composable
-private fun GroupDetail(g: FlaggedGroup, onBack: () -> Unit, onUngroup: () -> Unit) {
+private fun GroupDetail(
+    g: FlaggedGroup,
+    onBack: () -> Unit,
+    onUngroup: () -> Unit,
+    onMarkKnown: () -> Unit,
+) {
     val fmt = remember { SimpleDateFormat("MMM d, yyyy HH:mm", Locale.US) }
     var confirmUngroup by remember { mutableStateOf(false) }
+    var confirmKnown by remember { mutableStateOf(false) }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
         Row(
@@ -478,6 +494,21 @@ private fun GroupDetail(g: FlaggedGroup, onBack: () -> Unit, onUngroup: () -> Un
         Text("Last:  ${fmt.format(Date(g.lastSeen))}", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(24.dp))
 
+        SectionHeader("Not harassment?")
+        Spacer(Modifier.height(6.dp))
+        Text(
+            "If this is a friend or relative calling from a number you never saved, mark them a " +
+                "known caller. Every call from ${if (g.isBranch) "these numbers" else "this number"} " +
+                "is then left out of the flagged pattern, the analysis, the CSV, and the documents.",
+            fontSize = 13.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(8.dp))
+        OutlinedButton(onClick = { confirmKnown = true }, shape = RoundedCornerShape(10.dp)) {
+            Text("Mark as known caller")
+        }
+        Spacer(Modifier.height(24.dp))
+
         if (g.notedCalls.isNotEmpty()) {
             SectionHeader("Notes (${g.notedCalls.size})")
             Spacer(Modifier.height(4.dp))
@@ -522,6 +553,27 @@ private fun GroupDetail(g: FlaggedGroup, onBack: () -> Unit, onUngroup: () -> Un
                 TextButton(onClick = { confirmUngroup = false; onUngroup() }) { Text("Ungroup") }
             },
             dismissButton = { TextButton(onClick = { confirmUngroup = false }) { Text("Cancel") } },
+        )
+    }
+
+    if (confirmKnown) {
+        val n = g.numbers.size
+        AlertDialog(
+            onDismissRequest = { confirmKnown = false },
+            title = { Text("Mark “${g.label}” a known caller?") },
+            text = {
+                Text(
+                    "${if (n == 1) "This number" else "$n numbers"} will be treated as a trusted " +
+                        "contact. Their calls stay in the raw call log but are excluded from the flagged " +
+                        "pattern, the analysis, the CSV export, and every generated document. You can " +
+                        "undo this from Settings → Known callers." +
+                        if (g.isBranch) " The caller group is dissolved." else ""
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { confirmKnown = false; onMarkKnown() }) { Text("Mark known") }
+            },
+            dismissButton = { TextButton(onClick = { confirmKnown = false }) { Text("Cancel") } },
         )
     }
 }

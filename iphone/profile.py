@@ -64,11 +64,25 @@ class Profile:
     fcc_complaint_number: str = ""
     police_case_number: str = ""
     carrier_case_number: str = ""
+    # Known callers: friends/relatives who call from a number you never saved to
+    # contacts. Their calls are dropped from every evidence figure, chart, list,
+    # and the CSV; the evidence summary reports how many and shows an
+    # all-incoming vs. potential-harassment comparison.
+    safe_numbers: list[str] = field(default_factory=list)
 
     @property
     def affected_line(self) -> str:
         """The harassed number — falls back to the contact number when not set separately."""
         return self.affected_number.strip() or self.phone.strip()
+
+    @staticmethod
+    def _num_key(number: str) -> str:
+        digits = "".join(ch for ch in str(number) if ch.isdigit())
+        return digits[-10:] if len(digits) >= 7 else str(number).strip()
+
+    def is_safe(self, number: str) -> bool:
+        """True when [number] is one of the known callers (any format)."""
+        return self._num_key(number) in {self._num_key(n) for n in self.safe_numbers}
 
     @property
     def is_ready_for_documents(self) -> bool:
@@ -87,6 +101,7 @@ class Profile:
         known = {f.name for f in fields(cls)}
         clean = {k: v for k, v in (data or {}).items() if k in known}
         clean["harassment_type"] = HarassmentType.parse(clean.get("harassment_type"))
+        clean["safe_numbers"] = [str(n).strip() for n in (clean.get("safe_numbers") or []) if str(n).strip()]
         return cls(**clean)
 
     @classmethod

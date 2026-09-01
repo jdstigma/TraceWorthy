@@ -110,7 +110,9 @@ fun DocumentsScreen(
             Spacer(Modifier.height(10.dp))
         }
 
-        val hasIncidents = entries.any { !it.note.isNullOrBlank() || it.severity != Severity.Unset }
+        val hasIncidents = entries.any {
+            !it.isSafeListed && (!it.note.isNullOrBlank() || it.severity != Severity.Unset)
+        }
         items(
             // The incident timeline needs at least one annotated call to say anything.
             individualDocs.filter { it != DocumentType.IncidentTimeline || hasIncidents }

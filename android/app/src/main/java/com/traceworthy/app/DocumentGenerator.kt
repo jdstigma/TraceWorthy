@@ -272,9 +272,14 @@ object DocumentGenerator {
         myInfo: MyInfo,
         entries: List<CallEntry>,
     ): List<Block> {
-        val stats = CallStats.from(entries)
+        // Known callers (friends on unsaved numbers) are removed from every figure,
+        // chart, and list; the evidence summary reports how many and shows an
+        // all-incoming vs. potential-harassment comparison.
+        val excludedKnown = entries.filter { it.isSafeListed }
+        val evidence = entries.filterNot { it.isSafeListed }
+        val stats = CallStats.from(evidence)
         val branches = BranchStore.all(context)
-        return buildBlocks(type, case, myInfo, stats, entries, branches)
+        return buildBlocks(type, case, myInfo, stats, evidence, branches, excludedKnown)
     }
 
     /** Render the given blocks to a PDF saved in Downloads via MediaStore. */
@@ -308,6 +313,22 @@ object DocumentGenerator {
     }
 
     // -- Rendering engine ---------------------------------------------------
+
+    /**
+     * Vertical space the block after a heading needs, so a heading never sits
+     * alone at the bottom of a page away from the chart/table/text it labels.
+     * Tables and long bar lists are capped — they span pages by design, but the
+     * heading and the first rows should still travel together.
+     */
+    private fun keepWithHeading(block: Block?): Float = when (block) {
+        is Block.Pie -> 134f
+        is Block.Scatter -> 178f
+        is Block.BarChart -> (30f * block.bars.size.coerceAtLeast(1)).coerceAtMost(150f)
+        is Block.Table -> (24f + 15f * block.rows.size).coerceAtMost(120f)
+        is Block.Body -> 32f
+        is Block.Bullet -> 16f
+        else -> 0f
+    }
 
     private fun renderPdf(blocks: List<Block>): PdfDocument {
         val pdf = PdfDocument()
@@ -353,10 +374,15 @@ object DocumentGenerator {
             }
         }
 
-        blocks.forEach { block ->
+        blocks.forEachIndexed { i, block ->
             when (block) {
                 is Block.Title -> { drawWrapped(titleCase(block.text), title, 26f); y += 6f }
-                is Block.Heading -> { ensure(24f); y += 8f; drawWrapped(titleCase(block.text), heading, 18f) }
+                is Block.Heading -> {
+                    // Keep the heading on the same page as the content it labels.
+                    ensure(24f + keepWithHeading(blocks.getOrNull(i + 1)))
+                    y += 8f
+                    drawWrapped(titleCase(block.text), heading, 18f)
+                }
                 is Block.Body -> drawWrapped(block.text, body, 16f)
                 is Block.Bullet -> {
                     ensure(16f)
@@ -674,18 +700,57 @@ object DocumentGenerator {
         stats: CallStats,
         entries: List<CallEntry>,
         branches: Map<String, String>,
+        excludedKnown: List<CallEntry> = emptyList(),
     ): List<Block> = when (case.type) {
         CaseType.PhoneHarassment -> when (type) {
-            DocumentType.EvidencePacket -> evidencePacket(case, myInfo, stats, entries, branches)
+            DocumentType.EvidencePacket -> evidencePacket(case, myInfo, stats, entries, branches, excludedKnown)
             DocumentType.FccComplaint -> fccComplaint(case, myInfo, stats, entries)
             DocumentType.PoliceReport -> policeReport(case, myInfo, stats, entries)
             DocumentType.CarrierScript -> carrierScript(case, myInfo, stats)
             DocumentType.IncidentTimeline -> incidentTimeline(case, myInfo, entries)
-            DocumentType.EvidenceSummary -> evidenceSummary(case, myInfo, stats, entries, branches)
+            DocumentType.EvidenceSummary -> evidenceSummary(case, myInfo, stats, entries, branches, excludedKnown)
             DocumentType.NonDisclosureOrder -> nonDisclosureOrder(case, myInfo, entries)
             else -> emptyList()
         }
         CaseType.IdentityTheft -> IdentityTheftDocs.build(type, case, myInfo)
+    }
+
+    /**
+     * The "N calls from M known callers were removed" disclosure + an all-incoming
+     * vs. potential-harassment comparison. Empty when the user has no known callers.
+     */
+    private fun knownCallerBlocks(
+        myInfo: MyInfo,
+        evidence: List<CallEntry>,
+        excludedKnown: List<CallEntry>,
+    ): List<Block> {
+        if (excludedKnown.isEmpty()) return emptyList()
+        val knownNumbers = excludedKnown.map { it.number }.distinct().size
+        val allCalls = evidence.size + excludedKnown.size
+        val allNumbers = (evidence.map { it.number } + excludedKnown.map { it.number }).distinct().size
+        val name = myInfo.fullName.ifBlank { "the complainant" }
+        return listOf(
+            Block.Body(
+                "${excludedKnown.size} call${if (excludedKnown.size == 1) "" else "s"} from " +
+                    "$knownNumbers phone number${if (knownNumbers == 1) "" else "s"} that $name has " +
+                    "identified as known personal contacts — people not saved in the phone's address " +
+                    "book — have been removed. Every figure, chart, and list in this document counts " +
+                    "only the remaining calls, i.e. the potentially harassing ones.",
+            ),
+            Block.Heading("All Incoming Calls Vs Potential Harassment"),
+            Block.Table(
+                listOf("", "All incoming", "Potential harassment"),
+                listOf(
+                    listOf("Calls", allCalls.toString(), evidence.size.toString()),
+                    listOf("Distinct numbers", allNumbers.toString(), evidence.map { it.number }.distinct().size.toString()),
+                ),
+            ),
+            Block.Body(
+                "\"All incoming\" is every call received in this period. \"Potential harassment\" is " +
+                    "that total minus the known personal contacts above — the figures used everywhere " +
+                    "else in this document.",
+            ),
+        )
     }
 
     /**
@@ -712,7 +777,14 @@ object DocumentGenerator {
         if (hasDocumentedIncidents(entries)) PACKET_CONTENTS
         else PACKET_CONTENTS.filter { it != DocumentType.IncidentTimeline }
 
-    private fun evidencePacket(case: Case, myInfo: MyInfo, stats: CallStats, entries: List<CallEntry>, branches: Map<String, String>): List<Block> {
+    private fun evidencePacket(
+        case: Case,
+        myInfo: MyInfo,
+        stats: CallStats,
+        entries: List<CallEntry>,
+        branches: Map<String, String>,
+        excludedKnown: List<CallEntry> = emptyList(),
+    ): List<Block> {
         val (first, last) = dateRange(entries)
         val blocks = mutableListOf<Block>(
             Block.Title("TraceWorthy Evidence Packet"),
@@ -723,6 +795,16 @@ object DocumentGenerator {
             Block.Gap(6f),
             Block.Body("This packet documents a campaign of harassing phone calls to ${v(case.affectedLine(myInfo), "AFFECTED NUMBER")} and is intended to support a carrier traceback. It contains ${stats.totalCalls} logged calls from ${stats.uniqueNumbers} distinct numbers, ${stats.flaggedCalls} matching the harassment pattern. The full statistics and charts are on the evidence summary that follows."),
         )
+        if (excludedKnown.isNotEmpty()) {
+            val knownNumbers = excludedKnown.map { it.number }.distinct().size
+            blocks.add(Block.Body(
+                "This packet reflects only the potentially harassing calls: " +
+                    "${excludedKnown.size} call${if (excludedKnown.size == 1) "" else "s"} from " +
+                    "$knownNumbers known personal contact${if (knownNumbers == 1) "" else "s"} " +
+                    "(not in the phone's address book) have been removed. The evidence summary shows " +
+                    "the all-incoming vs. potential-harassment comparison.",
+            ))
+        }
         val contents = packetContents(entries)
         blocks.add(Block.Heading("Contents"))
         contents.forEachIndexed { i, t ->
@@ -738,7 +820,7 @@ object DocumentGenerator {
         blocks.addAll(spoofingExplainer().drop(1))  // drop the duplicate heading
         contents.forEach { t ->
             blocks.add(Block.PageBreak)
-            blocks.addAll(buildBlocks(t, case, myInfo, stats, entries, branches))
+            blocks.addAll(buildBlocks(t, case, myInfo, stats, entries, branches, excludedKnown))
         }
         return blocks
     }
@@ -928,7 +1010,14 @@ object DocumentGenerator {
         return blocks
     }
 
-    private fun evidenceSummary(case: Case, myInfo: MyInfo, stats: CallStats, entries: List<CallEntry>, branches: Map<String, String>): List<Block> {
+    private fun evidenceSummary(
+        case: Case,
+        myInfo: MyInfo,
+        stats: CallStats,
+        entries: List<CallEntry>,
+        branches: Map<String, String>,
+        excludedKnown: List<CallEntry> = emptyList(),
+    ): List<Block> {
         val (first, last) = dateRange(entries)
         val blocks = mutableListOf<Block>(
             Block.Title("TraceWorthy — Evidence Summary"),
@@ -937,6 +1026,7 @@ object DocumentGenerator {
             Block.Body("Reporting period: $first to $last"),
             Block.Body("Generated: ${human.format(Date())}"),
         )
+        blocks.addAll(knownCallerBlocks(myInfo, entries, excludedKnown))
         blocks.addAll(statsSection(entries))
         blocks.add(Block.Heading("Totals"))
         blocks.add(Block.Bullet("Calls logged: ${stats.totalCalls}"))
