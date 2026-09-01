@@ -110,7 +110,11 @@ fun DocumentsScreen(
             Spacer(Modifier.height(10.dp))
         }
 
-        items(individualDocs) { type ->
+        val hasIncidents = entries.any { !it.note.isNullOrBlank() || it.severity != Severity.Unset }
+        items(
+            // The incident timeline needs at least one annotated call to say anything.
+            individualDocs.filter { it != DocumentType.IncidentTimeline || hasIncidents }
+        ) { type ->
             DocumentCard(type) { openPreview(type) }
             Spacer(Modifier.height(12.dp))
         }
